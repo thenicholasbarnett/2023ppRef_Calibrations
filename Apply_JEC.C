@@ -274,18 +274,18 @@ void Apply_JEC()
     // slices of eta and pt slices
     TH1D *etaslices_of_ptslicesA[ptslicenum][etaslicenum];
     for(unsigned int q=0; q<ptslicenum; q++){
-        ptslicesA[q] = new TH2D(Form("Aptslice_%f_%f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
-        ptslicesR[q] = new TH2D(Form("Rptslice_%f_%f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
+        ptslicesA[q] = new TH2D(Form("Aptslice_%.1f_%.1f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
+        ptslicesR[q] = new TH2D(Form("Rptslice_%.1f_%.1f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
         for(unsigned int r=0; r<etaslicenum; r++){
-            etaslices_of_ptslicesA[q][r] = new TH1D(Form("Aptslice%d_%f_%f__etabin%d_%f_%f",q,ptlow[q],pthigh[q],r,etalow[r],etahigh[r]),"",ah1d0[0],ah1d0[1],ah1d0[2]);
+            etaslices_of_ptslicesA[q][r] = new TH1D(Form("Aptslice%d_%.1f_%.1f__etabin%d_%.1f_%.1f",q,ptlow[q],pthigh[q],r,etalow[r],etahigh[r]),"",ah1d0[0],ah1d0[1],ah1d0[2]);
         }
     }
     TH1D *ptslices_of_etaslicesA[etaslicenum][ptslicenum];
     for(unsigned int q=0; q<etaslicenum; q++){
-        etaslicesA[q] = new TH2D(Form("Aetaslice_%f_%f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
-        etaslicesR[q] = new TH2D(Form("Retaslice_%f_%f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
+        etaslicesA[q] = new TH2D(Form("Aetaslice_%.1f_%.1f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
+        etaslicesR[q] = new TH2D(Form("Retaslice_%.1f_%.1f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
         for(unsigned int r=0; r<ptslicenum; r++){
-            ptslices_of_etaslicesA[q][r] = new TH1D(Form("Aetaslice%d_%f_%f__ptbin%d_%f_%f",q,etalow[q],etahigh[q],r,ptlow[r],pthigh[r]),"",ah1d0[0],ah1d0[1],ah1d0[2]);
+            ptslices_of_etaslicesA[q][r] = new TH1D(Form("Aetaslice%d_%.1f_%.1f__ptbin%d_%.1f_%.1f",q,etalow[q],etahigh[q],r,ptlow[r],pthigh[r]),"",ah1d0[0],ah1d0[1],ah1d0[2]);
         }
     }
 
@@ -302,8 +302,8 @@ void Apply_JEC()
     Float_t a_=0, b_=0, c_=0;
 
     // pointing fi0 and fi1 to the files holding the data of interest
-    TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
-    // TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
+    // TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
+    TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
 
     // declaring variables
     int ppVF, HLT_AKCJ60v1, HLT_AKCJ80v1;
@@ -405,7 +405,7 @@ void Apply_JEC()
                     //     probeiter = 0;
                     // }
                     // tag is j = 0, probe is j = 1
-                    if((jteta[0]<tageta)&&(jteta[1]<5.2)){
+                    if((TMath::Abs(jteta[0])<tageta)&&(TMath::Abs(jteta[1])<5.2)){
                         tagiter = 0;
                         probeiter = 1;
                     }
@@ -440,7 +440,7 @@ void Apply_JEC()
                     //     }
                     // }
 
-                    if(jteta[0]<tageta){
+                    if(TMath::Abs(jteta[0])<tageta){
 
                         // printing A value and saving it
                         cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
@@ -489,15 +489,15 @@ void Apply_JEC()
     for(unsigned int k=0; k<ptslicenum; k++){
         // example of ProjectionY() below
         //myhist->ProjectionY(" ",firstxbin,lastxbin,"[cutg]");
-        ploth2d_1(ptslicesA[k], "eta", "Aval", Form("plots/ptslicesA[k]_for_k_is_%d.png",k), "");
+        ploth2d_1(ptslicesA[k], "eta", "Aval", Form("plots/ptslicesA[k]_for_k_is_%d.png",k), "COLZ");
         for(unsigned int l=0; l<etaslicenum; l++){
             etaslices_of_ptslicesA[k][l] = ptslicesA[k]->ProjectionY("",l,l,"");
             // getting y projection or slice of each pt bin for each eta slice
             ptslices_of_etaslicesA[l][k] = etaslicesA[l]->ProjectionY("",k,k,"");
             // saving these plots
-            TString htitle1 = Form("plots/Aptslice%d_%f_%f__etabin%d_%f_%f.png",k,ptlow[k],pthigh[k],l,etalow[l],etahigh[l]);
+            TString htitle1 = Form("plots/Aptslice%d_%.1f_%.1f__etabin%d_%.1f_%.1f.png",k,ptlow[k],pthigh[k],l,etalow[l],etahigh[l]);
             ploth1d_1_s(etaslices_of_ptslicesA[k][l], "A value",htitle1);
-            TString htitle2 = Form("plots/Aetaslice%d_%f_%f__ptbin%d_%f_%f.png",l,etalow[l],etahigh[l],k,ptlow[k],pthigh[k]);
+            TString htitle2 = Form("plots/Aetaslice%d_%.1f_%.1f__ptbin%d_%.1f_%.1f.png",l,etalow[l],etahigh[l],k,ptlow[k],pthigh[k]);
             ploth1d_1_s(ptslices_of_etaslicesA[l][k], "A value", htitle2);
         }
     } 
@@ -515,7 +515,7 @@ void Apply_JEC()
     for(unsigned int k=0; k<etaslicenum; k++){
         ptslicesAx[k] = (etahigh[k] + etalow[k])/2;
         ptslicesAxerr[k] = ptslicesAx[k] - etalow[k];
-        ploth2d_1(etaslicesA[k], "pt", "Aval", Form("plots/etaslicesA[k]_for_k_is_%d.png",k), "");
+        ploth2d_1(etaslicesA[k], "pt", "Aval", Form("plots/etaslicesA[k]_for_k_is_%d.png",k), "COLZ");
 
         for(unsigned int l=0; l<ptslicenum; l++){
             // pt slices hists of A vs eta
@@ -555,10 +555,10 @@ void Apply_JEC()
         cout << "line 542 reached for pt slice number " << k << endl;
         getaslicesAavg[k] = new TGraphErrors(ptslicenum,etaslicesAx,ys,etaslicesAxerr,yserr);
         cout << "line 544 reached for pt slice number " << k << endl;
-        TString htitle = Form("plots/Aavg_ptslice%d_%f_%f.png",k,ptlow[k],pthigh[k]);
+        TString htitle = Form("plots/Aavg_ptslice%d_%.1f_%.1f.png",k,ptlow[k],pthigh[k]);
         // plotg1d_1_s(gptslicesAavg[k], "p_T [GeV/c]", "<A>", htitle);
-        // plotg1d_1_s(gptslicesAavg[k], "p_T [GeV/c]", "<A>", Form("Aavg_ptslice%d_%f_%f",k,ptlow[k],pthigh[k]));
-        // plotg1d_1_s(gptslicesAavg[k], "p_T [GeV/c]", "<A>", sprintf("Aavg_ptslice%d_%f_%f",k,ptlow[k],pthigh[k]));
+        // plotg1d_1_s(gptslicesAavg[k], "p_T [GeV/c]", "<A>", Form("Aavg_ptslice%d_%.1f_%.1f",k,ptlow[k],pthigh[k]));
+        // plotg1d_1_s(gptslicesAavg[k], "p_T [GeV/c]", "<A>", sprintf("Aavg_ptslice%d_%.1f_%.1f",k,ptlow[k],pthigh[k]));
     }
 
     cout << "line 545 reached"<< endl;
@@ -573,7 +573,7 @@ void Apply_JEC()
         getaslicesAavg[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys,ptslicesAxerr,yserr);
         getaslicesAavg[k]->SetMinimum(-0.1);
         getaslicesAavg[k]->SetMaximum(0.1);
-        plotg1d_1_s(getaslicesAavg[k], "p_T [GeV/c]", "<A>", Form("plots/Aavg_etaslice%d_%f_%f.png",k,etalow[k],etahigh[k]));
+        plotg1d_1_s(getaslicesAavg[k], "p_T [GeV/c]", "<A>", Form("plots/Aavg_etaslice%d_%.1f_%.1f.png",k,etalow[k],etahigh[k]));
     }
 
     cout << "line 563 reached"<< endl;
@@ -585,7 +585,7 @@ void Apply_JEC()
     normalizeh(hrawpt);
     normalizeh(hjteta);
     normalizeh(hjtphi);
-    normalizeh(hjteta_uc);
+    // normalizeh(hjteta_uc);
 
     // PLOTTING
     //
@@ -598,14 +598,14 @@ void Apply_JEC()
     // for(unsigned int k=0; k<ptslicenum; k++){
     //     //myhist->ProjectionY(" ",firstxbin,lastxbin,"[cutg]");
     //     for(unsigned int l=0; l<etaslicenum; l++){
-    //         TString htitle = Form("plots/Aptslice%d_%f_%f__etabin%d_%f_%f.png",k,ptlow[k],pthigh[k],l,etalow[l],etahigh[l]);
+    //         TString htitle = Form("plots/Aptslice%d_%.1f_%.1f__etabin%d_%.1f_%.1f.png",k,ptlow[k],pthigh[k],l,etalow[l],etahigh[l]);
     //         ploth1d_1_s(etaslices_of_ptslicesA[k][l], "A value",htitle);
     //     }
     // }
     // for(unsigned int k=0; k<etaslicenum; k++){
     //     //myhist->ProjectionY(" ",firstxbin,lastxbin,"[cutg]");
     //     for(unsigned int l=0; l<ptslicenum; l++){
-    //         TString htitle = Form("plots/Aetaslice%d_%f_%f__ptbin%d_%f_%f.png",k,etalow[k],etahigh[k],l,ptlow[l],pthigh[l]);
+    //         TString htitle = Form("plots/Aetaslice%d_%.1f_%.1f__ptbin%d_%.1f_%.1f.png",k,etalow[k],etahigh[k],l,ptlow[l],pthigh[l]);
     //         ploth1d_1_s(ptslices_of_etaslicesA[k][l], "A value", htitle);
     //     }
     // }
