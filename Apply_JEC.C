@@ -1,8 +1,4 @@
-// this code takes in HiForestAOD_11.root, HiForestAOD_186.root, and HiForestAOD_187.root
-// and prints out the number of total events in them as well as the number of passed events in them
-// where passed events are events with |vz|<15 and have passed the following triggers:
-// pPAprimaryVertexFilter, HBHENoiseFilterResultRun2Loose, pBeamScrapingFilter, HLT_HIAK4CaloJet80_v1
-// this scripts also prints out how long it takes to run
+// 
 
 // imports
 #include "TROOT.h"
@@ -71,7 +67,7 @@ void ploth2d_1(TH2D *h, TString xtitle, TString ytitle, TString htitle, TString 
     h_c->GetYaxis()->SetTitle(ytitle);
     h_c->GetYaxis()->CenterTitle(true);
     if(xtitle == "pt"){
-        c->SetLogy();
+        // c->SetLogy();
         h_c->GetXaxis()->SetTitle("P_{T} [GeV/c]");
     }
     if(xtitle != "pt"){h_c->GetXaxis()->SetTitle(xtitle);}
@@ -244,13 +240,15 @@ void Apply_JEC()
     double phih1d0[3] = {100,4,4};
     double etah1d0[3] = {50,-5.2,5.2};
     double etah1d1[3] = {25,-1.7,1.7};
-    double ah1d0[3] = {10,-1,1};
+    double ah1d0[3] = {100,-1,1};
     // making bins for some pT histograms
     const Int_t bin1 = 5;
     double pth1d1[bin1+1] = {60,80,100,120,200,1000};
     // making a binning for the jer vs refpt plot
     const Int_t bin2 = 12;
     double pth1d2[bin2+1] = {80,90,100,110,120,130,140,150,180,220,300,500};
+
+    int pt80barreljetnum = 0;
 
     // parameters for pt balance responses
     // ptslices
@@ -260,8 +258,6 @@ void Apply_JEC()
     double ptsliceAtots[ptslicenum];
     double ptsliceAnums[ptslicenum];
     double ptsliceAavgs[ptslicenum];
-    TH2D *ptslicesA[ptslicenum];
-    TH2D *ptslicesR[ptslicenum];
     // eta slices
     const Int_t etaslicenum = 8;
     double etalow[etaslicenum] = {-5.2,-3.9,-2.6,-1.3,0,1.3,2.6,3.9};
@@ -269,10 +265,15 @@ void Apply_JEC()
     double etasliceAtots[etaslicenum];
     double etasliceAnums[etaslicenum];
     double etasliceAavgs[etaslicenum];
+    // hists
+    TH2D *ptslicesA[ptslicenum];
+    TH2D *ptslicesR[ptslicenum];
     TH2D *etaslicesA[etaslicenum];
     TH2D *etaslicesR[etaslicenum];
-    // slices of eta and pt slices
     TH1D *etaslices_of_ptslicesA[ptslicenum][etaslicenum];
+    TH1D *ptslices_of_etaslicesA[etaslicenum][ptslicenum];
+
+    // slices of eta and pt slices
     for(unsigned int q=0; q<ptslicenum; q++){
         ptslicesA[q] = new TH2D(Form("Aptslice_%.1f_%.1f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
         ptslicesR[q] = new TH2D(Form("Rptslice_%.1f_%.1f",ptlow[q],pthigh[q]),"",etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
@@ -280,7 +281,6 @@ void Apply_JEC()
             etaslices_of_ptslicesA[q][r] = new TH1D(Form("Aptslice%d_%.1f_%.1f__etabin%d_%.1f_%.1f",q,ptlow[q],pthigh[q],r,etalow[r],etahigh[r]),"",ah1d0[0],ah1d0[1],ah1d0[2]);
         }
     }
-    TH1D *ptslices_of_etaslicesA[etaslicenum][ptslicenum];
     for(unsigned int q=0; q<etaslicenum; q++){
         etaslicesA[q] = new TH2D(Form("Aetaslice_%.1f_%.1f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
         etaslicesR[q] = new TH2D(Form("Retaslice_%.1f_%.1f",etalow[q],etahigh[q]),"",pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
@@ -301,13 +301,15 @@ void Apply_JEC()
     // a_, b_ and c_ are the number of total events, accepted events before and after eata cut respectively
     Float_t a_=0, b_=0, c_=0;
 
-    // pointing fi0 and fi1 to the files holding the data of interest
-    // TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
-    TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
+    // pointing fi0 and fi1 to the files holding the data of interest// pointing fi0 and fi1 to the files holding the data of interest
+    // TFile *fi = TFile::Open("/eos/user/n/nbarnett/PPRefHardProbes1/crab_foresting_run373710_HP1_Uncorrected_1-25-2024_0/240125_170921/0000/HP_All_2_4_2024.root","read");
+    TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
+    // TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
 
     // declaring variables
     int ppVF, HLT_AKCJ60v1, HLT_AKCJ80v1;
     Float_t vz;
+    Float_t ptcut = 60;
     const Int_t nm = 200000;
     Float_t jtpt[nm];
     Float_t jtcorrpt[nm];
@@ -318,6 +320,18 @@ void Apply_JEC()
     Float_t atot, anum, aavg;
     Float_t tageta = 1.3; 
     Float_t probeeta = 2.5;
+
+    // pt balance study variables
+    // pt slices
+    Double_t ptslicesAavg[ptslicenum][etaslicenum];
+    Double_t ptslicesAavgerr[ptslicenum][etaslicenum];
+    Double_t ptslicesAx[etaslicenum];
+    Double_t ptslicesAxerr[etaslicenum];
+    // eta slices 
+    Double_t etaslicesAavg[etaslicenum][ptslicenum];
+    Double_t etaslicesAavgerr[etaslicenum][ptslicenum];
+    Double_t etaslicesAx[ptslicenum];
+    Double_t etaslicesAxerr[ptslicenum];
 
     // getting the TTrees from the file
     TTree *t0 = (TTree*)fi->Get("ak4PFJetAnalyzer/t");
@@ -356,7 +370,7 @@ void Apply_JEC()
         // only events with |vz|<15 and all the triggers of interest are passed
         // if((TMath::Abs(vz)<15)&&(pPApVF==1)&&(HBHENFRR2L==1)&&(pBSF==1)&&(HLT_HIAKCJ80v1==1)&&(pthat>15)&&(refpt[0]>80)&&(TMath::Abs(jteta[0])<1.6)){
         // if((TMath::Abs(vz)<15)&&(ppVF==1)&&(HLT_AKCJ60v1==1)){
-        if((TMath::Abs(vz)<15)&&(ppVF==1)&&(HLT_AKCJ80v1==1)){
+        if((TMath::Abs(vz)<15)&&(ppVF==1)&&(HLT_AKCJ60v1==1)){
             
             // adding one to passed events iff all the conditionals are true and the eta cut is NOT applied
             b_+=1;
@@ -366,130 +380,185 @@ void Apply_JEC()
             // looping through all jets in each event
             for(unsigned int j=0; j<nref; j++){
 
-                // filling histograms before eta cut
+                // filling histograms before eta and pt cut
                 hjteta_uc->Fill(jteta[j]);
+
+                if((rawpt[j]>pth1d0[1])&&(rawpt[j]<pth1d0[2])){
+                    hrawpt->Fill(rawpt[j]);
+                }
                 
                 // eta cut
                 // if(TMath::Abs(jteta[j])<1.6){
                 // if((TMath::Abs(jteta[j])<1.6)&&(jtpt[j]>pth1d0[1])&&(jtpt[j]<pth1d0[2])){
-                if((jtpt[j]>pth1d0[1])&&(jtpt[j]<pth1d0[2])){
+
+                // cout << "line 363 reached for event "<<i << endl;
+
+                // getting the corrected jtpt
+                vector<string> Files;
+                Files.push_back("ParallelMC_L2Relative_AK4PF_v0_12-21-2023.txt");
+                JetCorrector JEC(Files);
+
+                JEC.SetJetPT(rawpt[j]);
+                JEC.SetJetEta(jteta[j]);
+                JEC.SetJetPhi(jtphi[j]);  
+                Float_t jet_pt_corr = JEC.GetCorrectedPT();
+
+                jtcorrpt[j] = jet_pt_corr;
+
+                if((jtcorrpt[j]>pth1d0[1])&&(jtcorrpt[j]<pth1d0[2])){
+                    hjtcorrpt->Fill(jtcorrpt[j]);
+                }
+
+                if((jtcorrpt[j]>80)&&(jteta[j]<1.3)){
+                    pt80barreljetnum+=1;
+                }
+
+                // only look at pt balance studies if jtcorrpt > ptcut
+                if(jtcorrpt[j]>ptcut){
                     // filling histograms that have variables with more than one value per event
                     hjtpt->Fill(jtpt[j]);
                     hjteta->Fill(jteta[j]);
                     hjtphi->Fill(jtphi[j]);
-                    hrawpt->Fill(rawpt[j]);
-
-                    // cout << "line 363 reached for event "<<i << endl;
-
-                    // getting the corrected jtpt
-                    vector<string> Files;
-                    Files.push_back("ParallelMC_L2Relative_AK4PF_v0_12-21-2023.txt");
-                    JetCorrector JEC(Files);
-
-                    JEC.SetJetPT(rawpt[j]);
-                    JEC.SetJetEta(jteta[j]);
-                    JEC.SetJetPhi(jtphi[j]);  
-                    Float_t jet_pt_corr = JEC.GetCorrectedPT();
-
-                    jtcorrpt[j] = jet_pt_corr;
-
-                    // pt balance
-                    // making the iterator value for tag and probe jet, then adjusting value depending on eta values
-                    int tagiter = 0;
-                    int probeiter = 0;
-                    // finding the A values first
-                    // only considering leading and subleading jets
-                    // tag is j = 1, probe is j = 0
-                    // if((jteta[1]<tageta)&&(jteta[0]<5.2)){
-                    //     tagiter = 1;
-                    //     probeiter = 0;
-                    // }
-                    // tag is j = 0, probe is j = 1
-                    if((TMath::Abs(jteta[0])<tageta)&&(TMath::Abs(jteta[1])<5.2)){
-                        tagiter = 0;
-                        probeiter = 1;
-                    }
-                    // as it is if both leading and subleading jet eta are < 1.3 then the leading jet is taken to be the tag jet
-
-                    // if((jteta[1]<tageta)&&(jteta[0]>tageta)){
-                        
-                    //     // printing A value and saving it
-                    //     cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
-                    //     double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
-
-                    //     // pt slices A value filling
-                    //     // each k is a different slice of pt
-                    //     for(unsigned int k=0; k<ptslicenum; k++){
-                    //         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                    //         if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
-                    //             ptslicesA[k]->Fill(jteta[probeiter],Aval);
-                    //             // ptsliceAtots[k] += Aval;
-                    //             // ptsliceAnums[k] += 1;
-                    //         }
-                    //     }
-
-                    //     // eta slices A value filling
-                    //     // each k is a different slice of eta
-                    //     for(unsigned int k=0; k<etaslicenum; k++){
-                    //         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                    //         if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
-                    //             etaslicesA[k]->Fill(ptavg,Aval);
-                    //             // etasliceAtots[k] += Aval;
-                    //             // etasliceAnums[k] += 1;
-                    //         }
-                    //     }
-                    // }
-
-                    if(TMath::Abs(jteta[0])<tageta){
-
-                        // printing A value and saving it
-                        cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
-                        double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
-
-                        // pt slices A value filling
-                        // each k is a different slice of pt
-                        for(unsigned int k=0; k<ptslicenum; k++){
-                            double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                            if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
-                                ptslicesA[k]->Fill(jteta[probeiter],Aval);
-                            }
-                        }
-
-                        // eta slices A value filling
-                        // each k is a different slice of eta
-                        for(unsigned int k=0; k<etaslicenum; k++){
-                            double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                            if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
-                                etaslicesA[k]->Fill(ptavg,Aval);
-                            }
-                        }
-                    }
-
-                    if((jtcorrpt[j]>pth1d0[1])&&(jtcorrpt[j]<pth1d0[2])){
-                        hjtcorrpt->Fill(jtcorrpt[j]);}
-
-                    // int t0 = a_;
-                    // int t1 = j;
-                    // if((t0%250==0)&&(t1%10 == 0)){
-                        // cout << "for event " << a_ << endl<< endl;
-                        // cout << "jtpt is " << jtpt[j] << endl;
-                        // cout << "jteta is " << jteta[j] << endl;
-                        // cout << "jtphi is " << jtphi[j] << endl;
-                        // cout << "jtcorrpt is " << jtcorrpt[j] << endl;
-                        // cout << "rawpt is " << rawpt[j] << endl;
-                    // }
                 }
-            }   
+
+                // int t0 = a_;
+                // int t1 = j;
+                // if((t0%250==0)&&(t1%10 == 0)){
+                    // cout << "for event " << a_ << endl<< endl;
+                    // cout << "jtpt is " << jtpt[j] << endl;
+                    // cout << "jteta is " << jteta[j] << endl;
+                    // cout << "jtphi is " << jtphi[j] << endl;
+                    // cout << "jtcorrpt is " << jtcorrpt[j] << endl;
+                    // cout << "rawpt is " << rawpt[j] << endl;
+                // }
+            }
+
+            // PT BALANCE
+            
+            // finding the A values first
+            // only considering leading and subleading jets
+            // only considering leading jets as tag jet
+
+            // making the iterator value for tag and probe jet, then adjusting value depending on eta values
+            int tagiter = 0;
+            int probeiter = 0;
+
+            // tag is j = 1, probe is j = 0
+            if((TMath::Abs(jteta[1]<tageta))&&(TMath::Abs(jteta[0]<5.2))&&(jtcorrpt[0]<jtcorrpt[1])&&(jtcorrpt[0]>ptcut)){
+                tagiter = 1;
+                probeiter = 0;
+            }
+            // tag is j = 0, probe is j = 1
+            if((TMath::Abs(jteta[0])<tageta)&&(TMath::Abs(jteta[1])<5.2)&&(jtcorrpt[0]>jtcorrpt[1])&&(jtcorrpt[1]>ptcut)){
+                tagiter = 0;
+                probeiter = 1;
+            }
+            
+            // if(((TMath::Abs(jteta[1]<tageta))&&(TMath::Abs(jteta[0]<5.2))&&(jtcorrpt[0]<jtcorrpt[1]))||((TMath::Abs(jteta[0])<tageta)&&(TMath::Abs(jteta[1])<5.2)&&(jtcorrpt[0]>jtcorrpt[1]))){
+                
+            //     // printing A value and saving it
+            //     cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
+            //     double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
+
+            //     // pt slices A value filling
+            //     // each k is a different slice of pt
+            //     for(unsigned int k=0; k<ptslicenum; k++){
+            //         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+            //         if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
+            //             ptslicesA[k]->Fill(jteta[probeiter],Aval);
+            //         }
+            //     }
+
+            //     // eta slices A value filling
+            //     // each k is a different slice of eta
+            //     for(unsigned int k=0; k<etaslicenum; k++){
+            //         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+            //         if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
+            //             etaslicesA[k]->Fill(ptavg,Aval);
+            //         }
+            //     }
+            // }
+            
+            if((TMath::Abs(jteta[1]<tageta))&&(TMath::Abs(jteta[0]<5.2))&&(jtcorrpt[0]<jtcorrpt[1])&&(jtcorrpt[0]>ptcut)){
+                
+                // printing A value and saving it
+                cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
+                double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
+
+                // pt slices A value filling
+                // each k is a different slice of pt
+                for(unsigned int k=0; k<ptslicenum; k++){
+                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                    if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
+                        ptslicesA[k]->Fill(jteta[probeiter],Aval);
+                    }
+                }
+
+                // eta slices A value filling
+                // each k is a different slice of eta
+                for(unsigned int k=0; k<etaslicenum; k++){
+                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                    if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
+                        etaslicesA[k]->Fill(ptavg,Aval);
+                    }
+                }
+            }
+
+            if((TMath::Abs(jteta[0])<tageta)&&(TMath::Abs(jteta[1])<5.2)&&(jtcorrpt[0]>jtcorrpt[1])&&(jtcorrpt[1]>ptcut)){
+
+                // printing A value and saving it
+                cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
+                double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
+
+                // pt slices A value filling
+                // each k is a different slice of pt
+                for(unsigned int k=0; k<ptslicenum; k++){
+                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                    if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
+                        ptslicesA[k]->Fill(jteta[probeiter],Aval);
+                    }
+                }
+
+                // eta slices A value filling
+                // each k is a different slice of eta
+                for(unsigned int k=0; k<etaslicenum; k++){
+                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                    if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
+                        etaslicesA[k]->Fill(ptavg,Aval);
+                    }
+                }
+            }
+            
+            
         }
     }
 
     fi->Close();
+    cout << "the number of jets in the barrel with pT above 80 GeV was " << pt80barreljetnum << endl;
+
+    // normalizing with the integral function
+    normalizeh(hvz);
+    normalizeh(hjtpt);
+    normalizeh(hjtcorrpt);
+    normalizeh(hrawpt);
+    normalizeh(hjteta);
+    normalizeh(hjtphi); 
+
+    TFile f("pt_balance.root","recreate");
+    f.cd();
+
+    // base variable hists
+    hvz->Write();
+    hjtcorrpt->Write();
+    hjteta->Write();
+    hjtphi->Write();
+    hrawpt->Write();
     
     // getting y projection or slice of each eta bin for each pt slice
     for(unsigned int k=0; k<ptslicenum; k++){
         // example of ProjectionY() below
         //myhist->ProjectionY(" ",firstxbin,lastxbin,"[cutg]");
-        ploth2d_1(ptslicesA[k], "eta", "Aval", Form("plots/ptslicesA[k]_for_k_is_%d.png",k), "COLZ");
+        ploth2d_1(ptslicesA[k], "eta", "Aval", Form("plots/ptslicesA_ptbin%d_%.1f_%.1f.png",k,ptlow[k],pthigh[k]), "COLZ");
         for(unsigned int l=0; l<etaslicenum; l++){
             etaslices_of_ptslicesA[k][l] = ptslicesA[k]->ProjectionY("",l,l,"");
             // getting y projection or slice of each pt bin for each eta slice
@@ -502,38 +571,31 @@ void Apply_JEC()
         }
     } 
 
-    Double_t ptslicesAavg[ptslicenum][etaslicenum];
-    Double_t ptslicesAavgerr[ptslicenum][etaslicenum];
-    Double_t ptslicesAx[etaslicenum];
-    Double_t ptslicesAxerr[etaslicenum];
-
-    Double_t etaslicesAavg[etaslicenum][ptslicenum];
-    Double_t etaslicesAavgerr[etaslicenum][ptslicenum];
-    Double_t etaslicesAx[ptslicenum];
-    Double_t etaslicesAxerr[ptslicenum];
-
     for(unsigned int k=0; k<etaslicenum; k++){
+        etaslicesA[k]->Write();
         ptslicesAx[k] = (etahigh[k] + etalow[k])/2;
         ptslicesAxerr[k] = ptslicesAx[k] - etalow[k];
-        ploth2d_1(etaslicesA[k], "pt", "Aval", Form("plots/etaslicesA[k]_for_k_is_%d.png",k), "COLZ");
+        ploth2d_1(etaslicesA[k], "pt", "Aval", Form("plots/etaslicesA_etabin%d_%.1f_%.1f.png",k,etalow[k],etahigh[k]), "COLZ");
 
         for(unsigned int l=0; l<ptslicenum; l++){
+            if(k==0){
+                ptslicesA[l]->Write();
+                etaslicesAx[l] = (pthigh[k] + ptlow[l])/2;
+                etaslicesAxerr[l] = etaslicesAx[l] - ptlow[l];
+            }
+            etaslices_of_ptslicesA[l][k]->Write();
+            ptslices_of_etaslicesA[k][l]->Write();
             // pt slices hists of A vs eta
-            ptslicesAavg[l][k] = etaslices_of_ptslicesA[l][k]->GetMean();
+            ptslicesAavg[l][k] = (etaslices_of_ptslicesA[l][k])->GetMean();
             cout << "avg of etaslices_of_ptslicesA[l][k] for l = "<<l<<" and k = "<<k << " is "<<etaslices_of_ptslicesA[l][k]->GetMean() << endl;
-            ptslicesAavgerr[l][k] = ptslices_of_etaslicesA[l][k]->GetMeanError();
+            ptslicesAavgerr[l][k] = (ptslices_of_etaslicesA[l][k])->GetMeanError();
             // cout << "avg error of etaslices_of_ptslicesA[l][k] for l = "<<l<<" and k = "<<k << " is "<<ptslicesAavgerr[l][k] << endl;
             // eta slices hists of A vs pt
-            etaslicesAavg[k][l] = ptslices_of_etaslicesA[k][l]->GetMean();
+            etaslicesAavg[k][l] = (ptslices_of_etaslicesA[k][l])->GetMean();
             // cout << "avg of ptslices_of_etaslicesA[k][l] for l = "<<l<<" and k = "<<k << " is "<<etaslicesAavg[k][l] << endl;
-            etaslicesAavgerr[k][l] = ptslices_of_etaslicesA[k][l]->GetMeanError();
+            etaslicesAavgerr[k][l] = (ptslices_of_etaslicesA[k][l])->GetMeanError();
             // cout << "avg error of ptslices_of_etaslicesA[k][l] for l = "<<l<<" and k = "<<k <<" is "<< etaslicesAavgerr[k][l] << endl;
         }
-    }
-
-    for(unsigned int k=0; k<ptslicenum; k++){
-        etaslicesAx[k] = (pthigh[k] + ptlow[k])/2;
-        etaslicesAxerr[k] = etaslicesAx[k] - ptlow[k];
     }
 
     cout << "line 527 reached"<< endl;
@@ -541,7 +603,7 @@ void Apply_JEC()
     TGraph *getaslicesAavg[ptslicenum]; 
     TGraph *gptslicesAavg[etaslicenum];
 
-    cout << "line 532 reached"<< endl;
+    // cout << "line 532 reached"<< endl;
 
     for(unsigned int k=0; k<ptslicenum; k++){
         double ys[etaslicenum];
@@ -571,21 +633,12 @@ void Apply_JEC()
             yserr[l] = ptslicesAavgerr[k][l];
         }
         getaslicesAavg[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys,ptslicesAxerr,yserr);
-        getaslicesAavg[k]->SetMinimum(-0.1);
-        getaslicesAavg[k]->SetMaximum(0.1);
-        plotg1d_1_s(getaslicesAavg[k], "p_T [GeV/c]", "<A>", Form("plots/Aavg_etaslice%d_%.1f_%.1f.png",k,etalow[k],etahigh[k]));
+        // getaslicesAavg[k]->SetMinimum(-0.1);
+        // getaslicesAavg[k]->SetMaximum(0.1);
+        // plotg1d_1_s(getaslicesAavg[k], "p_T [GeV/c]", "<A>", Form("plots/Aavg_etaslice%d_%.1f_%.1f.png",k,etalow[k],etahigh[k]));
     }
 
     cout << "line 563 reached"<< endl;
-
-    // normalizing with the integral function
-    normalizeh(hvz);
-    normalizeh(hjtpt);
-    normalizeh(hjtcorrpt);
-    normalizeh(hrawpt);
-    normalizeh(hjteta);
-    normalizeh(hjtphi);
-    // normalizeh(hjteta_uc);
 
     // PLOTTING
     //
