@@ -91,7 +91,6 @@ void save_h2d(TH2D *h, TString alg, TString xtitle, TString ytitle, TString hnam
 }
 
 void save_g(TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
-    cout << " started save graph function " << endl;
     TCanvas *c = new TCanvas();
     c->cd();
     c->SetTitle("");
@@ -107,11 +106,15 @@ void save_g(TGraph *h, TString alg, TString xtitle, TString ytitle, TString hnam
     c->SetCanvasSize(w1,h1);
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
+    h->SetMarkerStyle(20);
     cout << " passed gstyle in save graph function " << endl;
+    TLine *line = new TLine(2,0.4,2,0.6);
+    line->Draw("same");
+    cout << " passed tline stuff in save graph function " << endl;
     // h->GetXaxis()->CenterTitle();
     // h->GetHistogram()->GetYaxis()->SetTitle("new Y axis title");
     // h->GetYaxis()->SetTitle(ytitle);
-    // h->GetYaxis()->SetTitle(xtitle);
+    // h->GetXaxis()->SetTitle(xtitle);
     // h->GetYaxis()->CenterTitle(true);
     // h->GetXaxis()->CenterTitle(true);
     cout << " passed axis titles in save graph function " << endl;
@@ -126,6 +129,56 @@ void save_g(TGraph *h, TString alg, TString xtitle, TString ytitle, TString hnam
     c->SaveAs("plots/"+hname+".png");
     delete c;
     cout << " finished save graph function " <<endl<<endl;
+}
+
+void save_g_1(TH1D *h_, TString option1, TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
+    // canvas stuff
+    TCanvas *c = new TCanvas();
+    c->cd();
+    c->SetTitle("");
+    c->SetName(hname);
+    Double_t w1 = 600;
+    c->SetCanvasSize(w1,w1); 
+    // hist to make stuff look like what I want
+    h_->GetYaxis()->SetTitle(ytitle);
+    h_->GetXaxis()->SetTitle(xtitle);
+    h_->GetYaxis()->CenterTitle(true);
+    h_->GetXaxis()->CenterTitle(true);
+    h_->SetMaximum(0.1);
+    h_->SetMinimum(-0.2);
+    h_->SetTitle("");
+    h_->Draw("e1p");
+    // plotting the graph of interest 
+    h->SetTitle("");
+    h->SetMarkerStyle(20);
+    h->SetMaximum(0.1);
+    h->SetMinimum(-0.2);
+    h->Draw("P SAME");
+    gStyle->SetPadTickX(1);
+    gStyle->SetPadTickY(1);
+    if(option1=="pt"){
+        TLine *line = new TLine(80,0,500,0);
+        line->Draw("same");
+        line->SetLineStyle(2);
+        }
+    if(option1=="eta"){
+        TLine *line = new TLine(-5.2,0,5.2,0);
+        line->Draw("same");
+        line->SetLineStyle(2);
+        }
+    // legend stuff
+    TLegend *l = new TLegend(0.7,0.7,0.9,0.9);
+    l->SetBorderSize(0);
+    l->SetFillStyle(0);
+    l->SetHeader(alg,"C");
+    l->AddEntry(h,hname,"pl");
+    l->SetTextSize(50);
+    l->Draw("same");
+    gStyle->SetOptStat(0);
+    c->Write();
+    c->SaveAs("plots/"+hname+".png");
+    // gStyle->SetOptStat(1);
+    delete c;
 }
 
 void normalizeh(TH1D *h){
@@ -150,7 +203,7 @@ void Apply_JEC()
     //////////////////////////////////////////////////////////////////
     // _h1dN is the Nth set of binning parameters for 1d hists of _
     double vzh1d0[3] = {40,-20,20};
-    double pth1d0[3] = {100,100,500};
+    double pth1d0[3] = {100,80,500};
     double phih1d0[3] = {100,4,4};
     double etah1d0[3] = {50,-5.2,5.2};
     double etah1d1[3] = {25,-1.7,1.7};
@@ -221,6 +274,12 @@ void Apply_JEC()
     TH1D *hjteta_uc = new TH1D("hjteta_uc","hjteta_uc",etah1d0[0],etah1d0[1],etah1d0[2]);
     ////////////////////////////////////////////////////////////////////////////
 
+    // initializing hists for canvases later
+    //////////////////////////////////////////////////////////////////////
+    TH1D *hpt = new TH1D("hpt","hpt",pth1d0[0],pth1d0[1],pth1d0[2]);
+    TH1D *heta = new TH1D("heta","heta",etah1d0[0],etah1d0[1],etah1d0[2]);
+    //////////////////////////////////////////////////////////////////////
+
     // INITIALIZING PARAMETERS
     timer.StartSplit("Parameter Initialization");
 
@@ -232,7 +291,9 @@ void Apply_JEC()
 
     // pointing fi to the file holding the jet info of interest
     // TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
-    TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
+    // TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
+    TFile *fi = TFile::Open("HP_All_2_4_2024.root","read");
+    // TFile *fi = TFile::Open("nbarnett@lxplus.cern.ch:eos/user/n/nbarnett/PPRefHardProbes1/crab_foresting_run373710_HP1_Uncorrected_1-25-2024_0/240125_170921/0000/HP_All_2_4_2024.root","read");
 
     // declaring variables
     ////////////////////////////////////////////////////////////////////////////
@@ -310,7 +371,7 @@ void Apply_JEC()
 
     // for loop going over events in the trees
     // for(unsigned int i=0; i<t0->GetEntries(); i++){
-    for(unsigned int i=0; i<10000; i++){
+    for(unsigned int i=0; i<100; i++){
 
         // timer 0
         int i_0 = i;
@@ -634,7 +695,7 @@ void Apply_JEC()
         getaslicesAavg[k] = new TGraphErrors(ptslicenum,etaslicesAx,ys,etaslicesAxerr,yserr);
         cout<<endl<<"line 623"<<endl<<endl;
         // making the title for the traph
-        TString htitle3 = Form("Aavg_etaslice%d_%.0f_%.0f",k,etalow[k]*10,etahigh[k]*10);
+        TString htitle3 = Form("<A>_eta_%.0f_%.0f",etalow[k]*10,etahigh[k]*10);
         // saving the <A> vs pT
         cout<<"line 627"<<endl<<endl;
         // gptslicesAavg[k]->SetTitle(htitle3);
@@ -643,7 +704,8 @@ void Apply_JEC()
         // cout<<"line 631"<<endl<<endl;
         // gptslicesAavg[k]->Write();
         cout<<"line 633"<<endl<<endl;
-        save_g(getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
+        // save_g(getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
+        save_g_1(hpt, "pt", getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
         cout<<"line 635"<<endl<<endl;
     }
 
@@ -659,11 +721,12 @@ void Apply_JEC()
         gptslicesAavg[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys,ptslicesAxerr,yserr);
         // getaslicesAavg[k]->SetMinimum(-0.1);
         // getaslicesAavg[k]->SetMaximum(0.1);
-        TString hname = Form("Aavg_ptslice%d_%.0f_%.0f",k,ptlow[k],pthigh[k]);
+        TString hname = Form("<A>_pt_%.0f_%.0f",ptlow[k],pthigh[k]);
         // getaslicesAavg[k]->SetTitle(hname);
         // getaslicesAavg[k]->SetName(hname);
         // getaslicesAavg[k]->Write();
-        save_g(getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", hname);
+        // save_g(gptslicesAavg[k], alghere, "η", "<A>", hname);
+        save_g_1(heta, "eta", gptslicesAavg[k], alghere, "η", "<A>", hname);
     }
     ////////////////////////////////////////////////////////////////////////////////////////////
 
