@@ -90,94 +90,68 @@ void save_h2d(TH2D *h, TString alg, TString xtitle, TString ytitle, TString hnam
     delete h_c;
 }
 
-void save_g(TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
-    TCanvas *c = new TCanvas();
-    c->cd();
-    c->SetTitle("");
-    c->SetName(hname);
-    h->Draw("AP");
-    h->SetTitle("");
+void save_g(TGraph *h, TString hname){
     h->SetName(hname);
-    cout << " passed set name in save graph function " << endl;
-    h->SetMaximum(0.1);
-    h->SetMinimum(-0.2);
-    Double_t w1 = 600;
-    Double_t h1 = 600;
-    c->SetCanvasSize(w1,h1);
-    gStyle->SetPadTickX(1);
-    gStyle->SetPadTickY(1);
-    h->SetMarkerStyle(20);
-    cout << " passed gstyle in save graph function " << endl;
-    TLine *line = new TLine(2,0.4,2,0.6);
-    line->Draw("same");
-    cout << " passed tline stuff in save graph function " << endl;
-    // h->GetXaxis()->CenterTitle();
-    // h->GetHistogram()->GetYaxis()->SetTitle("new Y axis title");
-    // h->GetYaxis()->SetTitle(ytitle);
-    // h->GetXaxis()->SetTitle(xtitle);
-    // h->GetYaxis()->CenterTitle(true);
-    // h->GetXaxis()->CenterTitle(true);
-    cout << " passed axis titles in save graph function " << endl;
-    TLegend *l = new TLegend(0.7,0.7,0.9,0.9);
-    l->SetBorderSize(0);
-    l->SetFillStyle(0);
-    l->SetHeader(alg,"C");
-    // l->AddEntry((TObject*)0, alg, "");
-    l->AddEntry(h,hname,"pl");
-    l->Draw("same");
-    c->Write();
-    c->SaveAs("plots/"+hname+".png");
-    delete c;
-    cout << " finished save graph function " <<endl<<endl;
+    h->Write();
+    h->SaveAs("plots/"+hname+"1.png");
 }
 
-void save_g_1(TH1D *h_, TString option1, TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
+void save_g_1(TH1D *h_, TString option1,TString option2, TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
     // canvas stuff
     TCanvas *c = new TCanvas();
     c->cd();
     c->SetTitle("");
     c->SetName(hname);
-    Double_t w1 = 600;
-    c->SetCanvasSize(w1,w1); 
     // hist to make stuff look like what I want
     h_->GetYaxis()->SetTitle(ytitle);
     h_->GetXaxis()->SetTitle(xtitle);
     h_->GetYaxis()->CenterTitle(true);
     h_->GetXaxis()->CenterTitle(true);
-    h_->SetMaximum(0.1);
-    h_->SetMinimum(-0.2);
     h_->SetTitle("");
     h_->Draw("e1p");
     // plotting the graph of interest 
-    h->SetTitle("");
     h->SetMarkerStyle(20);
-    h->SetMaximum(0.1);
-    h->SetMinimum(-0.2);
     h->Draw("P SAME");
     gStyle->SetPadTickX(1);
     gStyle->SetPadTickY(1);
-    if(option1=="pt"){
-        TLine *line = new TLine(80,0,500,0);
-        line->Draw("same");
-        line->SetLineStyle(2);
+    if(option2=="A"){
+        h_->SetMaximum(0.1);
+        h_->SetMinimum(-0.1);
+        if(option1=="pt"){
+            TLine *line = new TLine(80,0,500,0);
+            line->Draw("same");
+            line->SetLineStyle(2);
+            }
+        if(option1=="eta"){
+            TLine *line = new TLine(-5.2,0,5.2,0);
+            line->Draw("same");
+            line->SetLineStyle(2);
+            }
         }
-    if(option1=="eta"){
-        TLine *line = new TLine(-5.2,0,5.2,0);
-        line->Draw("same");
-        line->SetLineStyle(2);
+    if(option2=="R"){
+        h_->SetMaximum(1.1);
+        h_->SetMinimum(0.9);
+        if(option1=="pt"){
+            TLine *line = new TLine(80,1,500,1);
+            line->Draw("same");
+            line->SetLineStyle(2);
+            }
+        if(option1=="eta"){
+            TLine *line = new TLine(-5.2,1,5.2,1);
+            line->Draw("same");
+            line->SetLineStyle(2);
+            }
         }
     // legend stuff
     TLegend *l = new TLegend(0.7,0.7,0.9,0.9);
     l->SetBorderSize(0);
     l->SetFillStyle(0);
     l->SetHeader(alg,"C");
-    l->AddEntry(h,hname,"pl");
+    l->AddEntry(h,hname,"p");
     l->SetTextSize(50);
-    l->Draw("same");
-    gStyle->SetOptStat(0);
+    l->Draw();
     c->Write();
     c->SaveAs("plots/"+hname+".png");
-    // gStyle->SetOptStat(1);
     delete c;
 }
 
@@ -192,6 +166,7 @@ void Apply_JEC()
     // determining the inital time of the script
     Timer timer = Timer();
     timer.Start();
+    gStyle->SetOptStat(0);
 
     // INITIALIZING HISTOGRAMS
     timer.StartSplit("Histogram Initialization");
@@ -222,6 +197,9 @@ void Apply_JEC()
     // the low and high eta values for each eta slice
     double etalow[etaslicenum] = {-5.2,-3.9,-2.6,-1.3,0,1.3,2.6,3.9};
     double etahigh[etaslicenum] = {-3.9,-2.6,-1.3,0,1.3,2.6,3.9,5.2};
+
+    // for generating random numbers
+    TRandom2 *rand = new TRandom2(1);
     //////////////////////////////////////////////////////////////////
 
     // Making some hists for pt balance studies
@@ -237,8 +215,8 @@ void Apply_JEC()
 
     // <A> as well as R vs pt and eta for eta and pt slices respectively
     TGraph *getaslicesAavg[ptslicenum];
-    TGraph *getaslicesR[ptslicenum]; 
-    TGraph *gptslicesAavg[etaslicenum]; 
+    TGraph *getaslicesR[ptslicenum];
+    TGraph *gptslicesAavg[etaslicenum];
     TGraph *gptslicesR[etaslicenum];
 
     // further initializing the histograms
@@ -293,7 +271,7 @@ void Apply_JEC()
     // TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
     // TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
     TFile *fi = TFile::Open("HP_All_2_4_2024.root","read");
-    // TFile *fi = TFile::Open("nbarnett@lxplus.cern.ch:eos/user/n/nbarnett/PPRefHardProbes1/crab_foresting_run373710_HP1_Uncorrected_1-25-2024_0/240125_170921/0000/HP_All_2_4_2024.root","read");
+    // TFile *fi = TFile::Open("/eos/user/n/nbarnett/PPRefHardProbes1/crab_foresting_run373710_HP1_Uncorrected_1-25-2024_0/240125_170921/0000/HP_All_2_4_2024.root","read");
 
     // declaring variables
     ////////////////////////////////////////////////////////////////////////////
@@ -327,6 +305,10 @@ void Apply_JEC()
     Double_t ptslicesAavg[ptslicenum][etaslicenum];
     // the uncertainty or error in <A> for each pt slice
     Double_t ptslicesAavgerr[ptslicenum][etaslicenum];
+    // R for each pt slice
+    Double_t ptslicesR[ptslicenum][etaslicenum];
+    // the uncertainty or error in R for each pt slice
+    Double_t ptslicesRerr[ptslicenum][etaslicenum];
     // eta values on x axis
     Double_t ptslicesAx[etaslicenum];
     // making tgraphs with information so the error in x is half the bin width
@@ -334,6 +316,8 @@ void Apply_JEC()
     // cooresponding values for eta slices 
     Double_t etaslicesAavg[etaslicenum][ptslicenum];
     Double_t etaslicesAavgerr[etaslicenum][ptslicenum];
+    Double_t etaslicesR[etaslicenum][ptslicenum];
+    Double_t etaslicesRerr[etaslicenum][ptslicenum];
     Double_t etaslicesAx[ptslicenum];
     Double_t etaslicesAxerr[ptslicenum];
     ////////////////////////////////////////////////////////////////////////////
@@ -371,7 +355,7 @@ void Apply_JEC()
 
     // for loop going over events in the trees
     // for(unsigned int i=0; i<t0->GetEntries(); i++){
-    for(unsigned int i=0; i<100; i++){
+    for(unsigned int i=0; i<450000; i++){
 
         // timer 0
         int i_0 = i;
@@ -381,8 +365,6 @@ void Apply_JEC()
 
         // getting the entries in every event
         ////////////////
-        t0->GetEntry(i);
-        t1->GetEntry(i);
         t2->GetEntry(i);
         t3->GetEntry(i);
         ////////////////
@@ -392,166 +374,256 @@ void Apply_JEC()
 
         // EVENT CUT
         // only events with |vz|<15 and all the triggers of interest are passed
-        if((TMath::Abs(vz)<15)&&(ppVF==1)&&(HLT_AKCJ60v1==1)){
-            
-            // adding one to passed events iff all the conditionals are true and the eta cut is NOT applied
-            b_+=1;
-
-            // filling the vertex position hist
-            hvz->Fill(vz);
-            
-            // looping through all jets in each event
-            for(unsigned int j=0; j<nref; j++){
-
-                // filling histograms before eta and pt cut
-                ////////////////////////////////////////////////
-                hjteta_uc->Fill(jteta[j]);
+        if((ppVF==1)&&(HLT_AKCJ60v1==1)){
+            t1->GetEntry(i);
+            if(TMath::Abs(vz)<15){
+                t0->GetEntry(i);
                 
-                if((rawpt[j]>pth1d0[1])&&(rawpt[j]<pth1d0[2])){
-                    hrawpt->Fill(rawpt[j]);
-                }
-                ////////////////////////////////////////////////
 
-                // getting the corrected jtpt
-                //////////////////////////////////////////////////////////////////
-                vector<string> Files;
-                Files.push_back("ParallelMC_L2Relative_AK4PF_v0_12-21-2023.txt");
-                JetCorrector JEC(Files);
-
-                JEC.SetJetPT(rawpt[j]);
-                JEC.SetJetEta(jteta[j]);
-                JEC.SetJetPhi(jtphi[j]);  
-                Float_t jet_pt_corr = JEC.GetCorrectedPT();
-                //////////////////////////////////////////////////////////////////
-
-                // saving the corrected jet pt
-                jtcorrpt[j] = jet_pt_corr;
                 
-                // timer 1
-                int i_1 = i;
-                if((i_1%50==0)&&(j==0)){timer.StartSplit(Form("event_%d_jet[%d]_until_line_434",i,j));}
+                // adding one to passed events iff all the conditionals are true and the eta cut is NOT applied
+                b_+=1;
 
-                // Filling some hists
-                //////////////////////////////////////////////////////
-                if((jtcorrpt[j]>pth1d0[1])&&(jtcorrpt[j]<pth1d0[2])){
-                    hjtcorrpt->Fill(jtcorrpt[j]);
-                }
+                // filling the vertex position hist
+                hvz->Fill(vz);
+                
+                // looping through all jets in each event
+                for(unsigned int j=0; j<nref; j++){
 
-                if((jtcorrpt[j]>80)&&(jteta[j]<1.3)){
-                    pt80barreljetnum+=1;
-                }
-
-                // only look at pt balance studies if jtcorrpt > ptcut
-                if(jtcorrpt[j]>ptcut){
-                    // filling histograms that have variables with more than one value per event
-                    hjtpt->Fill(jtpt[j]);
-                    hjteta->Fill(jteta[j]);
-                    hjtphi->Fill(jtphi[j]);
-                }
-                //////////////////////////////////////////////////////
-
-                // Some print statements
-                //////////////////////////////////////////////////////
-                // int t0 = a_;
-                // int t1 = j;
-                // if((t0%250==0)&&(t1%10 == 0)){
-                    // cout << "for event " << a_ << endl<< endl;
-                    // cout << "jtpt is " << jtpt[j] << endl;
-                    // cout << "jteta is " << jteta[j] << endl;
-                    // cout << "jtphi is " << jtphi[j] << endl;
-                    // cout << "jtcorrpt is " << jtcorrpt[j] << endl;
-                    // cout << "rawpt is " << rawpt[j] << endl;
-                // }
-                //////////////////////////////////////////////////////
-            }
-
-            // timer 2
-            int i_2 = i;
-            if(i_2%50==0){timer.StartSplit(Form("pt balance stuff for event %d",i));}
-
-            // PT BALANCE
-            //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            // making the iterator values for tag, probe, and third leading jet (if there is one)
-            // tag jet must be leading, and probe jet must be subleading
-            // then adjusting the iterator values depending on pt order of jets in the event
-            int tagiter = 0;
-            int probeiter = 1;
-
-            // finding the leading jet, which is the possible tag jet
-            // looping through the jets in the event
-            for(unsigned int j=0; j<nref; j++){
-                // only when the jet pt is highest will it replace the current iterator
-                // in the case this is never true the original leading jet would still be the leading jet and iter would be 0
-                if(jtcorrpt[j]>jtcorrpt[tagiter]){
-                    tagiter=j;
-                    // if now the leading is the original subleading jet
-                    // then the subleading jet is changed to another iter before being found
-                    // this will be true iff tagiter = 1 or the leading jet is the original subleading jet index
-                    if(probeiter==tagiter){
-                        probeiter=0;
+                    // filling histograms before eta and pt cut
+                    ////////////////////////////////////////////////
+                    hjteta_uc->Fill(jteta[j]);
+                    
+                    if((rawpt[j]>pth1d0[1])&&(rawpt[j]<pth1d0[2])){
+                        hrawpt->Fill(rawpt[j]);
                     }
-                }
-            }
+                    ////////////////////////////////////////////////
 
-            // finding the subleading jet, which is the possible probe jet
-            // looping through the jets in the event
-            for(unsigned int j=0; j<nref; j++){
-                // only when the jet pt is larger than current subleading jet and smaller than leading jet
-                // in the case this is never true the original subleading, or possibly leading, jet would be the subleading jet and iter would be 1, or possibly 0
-                if((jtcorrpt[j]<jtcorrpt[tagiter])&&(jtcorrpt[j]>jtcorrpt[probeiter])){
-                    probeiter=j;
-                }
-            }
+                    // getting the corrected jtpt
+                    //////////////////////////////////////////////////////////////////
+                    vector<string> Files;
+                    Files.push_back("ParallelMC_L2Relative_AK4PF_v0_12-21-2023.txt");
+                    JetCorrector JEC(Files);
 
-            // finding the third leading jet, iff there are at least three jets
-            if(nref>2){
-                int thirditer = 2;
-                // start assuming the third leading jet is the third leading jet still, unless either the leading jet or subleading jet is already
-                // only looking at the first three jets
-                for(unsigned int q=0; q<3; q++){
-                    // one of the first three jets isn't the leading or subleading jet and we initialize the third jet to be that one
-                    if((q!=probeiter)&&(q!=tagiter)){
-                        thirditer = q;
+                    JEC.SetJetPT(rawpt[j]);
+                    JEC.SetJetEta(jteta[j]);
+                    JEC.SetJetPhi(jtphi[j]);  
+                    Float_t jet_pt_corr = JEC.GetCorrectedPT();
+                    //////////////////////////////////////////////////////////////////
+
+                    // saving the corrected jet pt
+                    jtcorrpt[j] = jet_pt_corr;
+                    
+                    // timer 1
+                    int i_1 = i;
+                    if((i_1%50==0)&&(j==0)){timer.StartSplit(Form("event_%d_jet[%d]_until_line_434",i,j));}
+
+                    // Filling some hists
+                    //////////////////////////////////////////////////////
+                    if((jtcorrpt[j]>pth1d0[1])&&(jtcorrpt[j]<pth1d0[2])){
+                        hjtcorrpt->Fill(jtcorrpt[j]);
                     }
+
+                    if((jtcorrpt[j]>80)&&(jteta[j]<1.3)){
+                        pt80barreljetnum+=1;
+                    }
+
+                    // only look at pt balance studies if jtcorrpt > ptcut
+                    if(jtcorrpt[j]>ptcut){
+                        // filling histograms that have variables with more than one value per event
+                        hjtpt->Fill(jtpt[j]);
+                        hjteta->Fill(jteta[j]);
+                        hjtphi->Fill(jtphi[j]);
+                    }
+                    //////////////////////////////////////////////////////
+
+                    // Some print statements
+                    //////////////////////////////////////////////////////
+                    // int t0 = a_;
+                    // int t1 = j;
+                    // if((t0%250==0)&&(t1%10 == 0)){
+                        // cout << "for event " << a_ << endl<< endl;
+                        // cout << "jtpt is " << jtpt[j] << endl;
+                        // cout << "jteta is " << jteta[j] << endl;
+                        // cout << "jtphi is " << jtphi[j] << endl;
+                        // cout << "jtcorrpt is " << jtcorrpt[j] << endl;
+                        // cout << "rawpt is " << rawpt[j] << endl;
+                    // }
+                    //////////////////////////////////////////////////////
                 }
+
+                // timer 2
+                int i_2 = i;
+                if(i_2%50==0){timer.StartSplit(Form("pt balance stuff for event %d",i));}
+
+                // PT BALANCE
+                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // making the iterator values for tag, probe, and third leading jet (if there is one)
+                // tag jet must be leading, and probe jet must be subleading
+                // then adjusting the iterator values depending on pt order of jets in the event
+                int leaditer = 0;
+                int subleaditer = 1;
+                int tagiter = 0;
+                int probeiter = 1;
+
+                // finding the leading jet, which is the possible tag jet
                 // looping through the jets in the event
-                for(unsigned int j=2; j<nref; j++){
-                    // determining if another jet between index 3 and nref-1 exists with higher pt than the current third jet, but only if it is less pt than and isn't the probe or tag jet
-                    if((jtcorrpt[j]>jtcorrpt[thirditer])&&(jtcorrpt[j]<jtcorrpt[probeiter])&&(jtcorrpt[j]<jtcorrpt[tagiter])&&(j!=probeiter)&&(j!=tagiter)){
-                        thirditer = j;
-                    }
-                }              
-            }
-        
-            // finding the A values iff the leading jet has eta < 1.3 and subleading jet passes the pt cut and has eta < 5.2 
-            if((TMath::Abs(jteta[tagiter]<tageta))&&(TMath::Abs(jteta[probeiter]<5.2))&&(jtcorrpt[probeiter]>ptcut)){
-                
-                // printing A value and saving it
-                cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
-                double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
-
-                // pt slices A value filling
-                // each k is a different slice of pt
-                for(unsigned int k=0; k<ptslicenum; k++){
-                    // average momentum between the probe and tag jet 
-                    // these are sliced originally to get A vs eta for different pt slices
-                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                    // if the pt avg is within a certain slice range then add it to the pt slice hists
-                    if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
-                        // ptslicesA are A vs eta_probe hists for different pt ranges or slices
-                        ptslicesA[k]->Fill(jteta[probeiter],Aval);
+                for(unsigned int j=0; j<nref; j++){
+                    // only when the jet pt is highest will it replace the current iterator
+                    // in the case this is never true the original leading jet would still be the leading jet and iter would be 0
+                    if(jtcorrpt[j]>jtcorrpt[leaditer]){
+                        leaditer=j;
+                        // if now the leading is the original subleading jet
+                        // then the subleading jet is changed to another iter before being found
+                        // this will be true iff tagiter = 1 or the leading jet is the original subleading jet index
+                        if(subleaditer==leaditer){
+                            subleaditer=0;
+                        }
                     }
                 }
 
-                // eta slices A value filling
-                // each k is a different slice of eta
-                for(unsigned int k=0; k<etaslicenum; k++){
-                    // ptavg is the x axis in one desired type of plot
-                    double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
-                    // if the eta is within a certain slice range then add it to the eta slice hists
-                    if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
-                        // etaslicesA are A vs pt_avg hists for different eta ranges
-                        etaslicesA[k]->Fill(ptavg,Aval);
+                // finding the subleading jet, which is the possible probe jet
+                // looping through the jets in the event
+                for(unsigned int j=0; j<nref; j++){
+                    // only when the jet pt is larger than current subleading jet and smaller than leading jet
+                    // in the case this is never true the original subleading, or possibly leading, jet would be the subleading jet and iter would be 1, or possibly 0
+                    if((jtcorrpt[j]<jtcorrpt[leaditer])&&(jtcorrpt[j]>jtcorrpt[subleaditer])){
+                        subleaditer=j;
+                    }
+                }
+
+                // pt balance study for the case nref < 3
+                // defining tag and probe iters based on leading and subleading jet iters
+                // tag and probe must be either leading or subleading jet
+                // if the leading jet is in the barrel, tag it
+                if(TMath::Abs(jteta[leaditer]<1.3)){
+                    tagiter = leaditer;
+                    probeiter = subleaditer;
+                }
+                // if the subleading jet is in the barrel, tag it
+                if(TMath::Abs(jteta[subleaditer]<1.3)){
+                    tagiter = subleaditer;
+                    probeiter = leaditer;
+                }
+                // in the case both jets are in the barrel we make a random number 
+                // if the random number is even or odd the tag jet is the leading or subleading jet respectively
+                if((TMath::Abs(jteta[leaditer]<1.3))&&(TMath::Abs(jteta[subleaditer]<1.3))){
+                    int checkval1 = rand->Integer(101);
+                    if((checkval1%2==0)&&(nref<3)){
+                        tagiter = leaditer;
+                        probeiter = subleaditer;
+                        cout<<"the random number is "<< checkval1<<" and even, leading jet is tagged"<<endl;
+                    }
+                    if((checkval1%2!=0)&&(nref<3)){
+                        tagiter = subleaditer;
+                        probeiter = leaditer;
+                        cout<<"the random number is "<< checkval1<<" and odd, subleading jet is tagged"<<endl;
+                    }
+                }
+
+                // finding the third leading jet, iff there are at least three jets
+                if(nref>2){
+                    int thirditer = 2;
+                    // start assuming the third leading jet is the third leading jet still, unless either the leading jet or subleading jet is already
+                    // only looking at the first three jets
+                    for(unsigned int q=0; q<3; q++){
+                        // one of the first three jets isn't the leading or subleading jet and we initialize the third jet to be that one
+                        if((q!=subleaditer)&&(q!=leaditer)){
+                            thirditer = q;
+                        }
+                    }
+                    // looping through the jets in the event
+                    for(unsigned int j=2; j<nref; j++){
+                        // determining if another jet between index 3 and nref-1 exists with higher pt than the current third jet, but only if it is less pt than and isn't the probe or tag jet
+                        if((jtcorrpt[j]>jtcorrpt[thirditer])&&(jtcorrpt[j]<jtcorrpt[subleaditer])&&(jtcorrpt[j]<jtcorrpt[leaditer])&&(j!=subleaditer)&&(j!=leaditer)){
+                            thirditer = j;
+                        }
+                    }
+                    // still working if there is a third jet
+                    // doing the whole pt balance study in the case there is a third jet
+                    if((jtcorrpt[subleaditer]+jtcorrpt[leaditer])>0.4*jtcorrpt[thirditer]){
+                        if(TMath::Abs(jteta[leaditer]<1.3)){
+                            tagiter = leaditer;
+                            probeiter = subleaditer;
+                        }
+                        if(TMath::Abs(jteta[subleaditer]<1.3)){
+                            tagiter = subleaditer;
+                            probeiter = leaditer;
+                        }
+                        if((TMath::Abs(jteta[leaditer]<1.3))&&(TMath::Abs(jteta[subleaditer]<1.3))){
+                            int checkval = rand->Integer(101);
+                            if(checkval%2==0){
+                                tagiter = leaditer;
+                                probeiter = subleaditer;
+                                cout<<"the random number is "<< checkval<<" and even, leading jet is tagged"<<endl;
+                            }
+                            if(checkval%2!=0){
+                                tagiter = subleaditer;
+                                probeiter = leaditer;
+                                cout<<"the random number is "<< checkval<<" and odd, subleading jet is tagged"<<endl;
+                            }
+                        }
+                        // printing A value and saving it
+                        cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
+                        double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
+
+                        // pt slices A value filling
+                        // each k is a different slice of pt
+                        for(unsigned int k=0; k<ptslicenum; k++){
+                            // average momentum between the probe and tag jet 
+                            // these are sliced originally to get A vs eta for different pt slices
+                            double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                            // if the pt avg is within a certain slice range then add it to the pt slice hists
+                            if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
+                                // ptslicesA are A vs eta_probe hists for different pt ranges or slices
+                                ptslicesA[k]->Fill(jteta[probeiter],Aval);
+                            }
+                        }
+
+                        // eta slices A value filling
+                        // each k is a different slice of eta
+                        for(unsigned int k=0; k<etaslicenum; k++){
+                            // ptavg is the x axis in one desired type of plot
+                            double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                            // if the eta is within a certain slice range then add it to the eta slice hists
+                            if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
+                                // etaslicesA are A vs pt_avg hists for different eta ranges
+                                etaslicesA[k]->Fill(ptavg,Aval);
+                            }
+                        }
+                    }              
+                }
+            
+                // finding the A values iff the leading jet has eta < 1.3 and subleading jet passes the pt cut and has eta < 5.2 
+                if(((TMath::Abs(jteta[leaditer]<1.3))||(TMath::Abs(jteta[subleaditer]<1.3)))&&(jtcorrpt[subleaditer]>ptcut)&&(nref<3)){
+                    
+                    // printing A value and saving it
+                    cout << "A is " << (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]) << endl;
+                    double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
+
+                    // pt slices A value filling
+                    // each k is a different slice of pt
+                    for(unsigned int k=0; k<ptslicenum; k++){
+                        // average momentum between the probe and tag jet 
+                        // these are sliced originally to get A vs eta for different pt slices
+                        double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                        // if the pt avg is within a certain slice range then add it to the pt slice hists
+                        if((ptavg>ptlow[k])&&(ptavg<pthigh[k])){
+                            // ptslicesA are A vs eta_probe hists for different pt ranges or slices
+                            ptslicesA[k]->Fill(jteta[probeiter],Aval);
+                        }
+                    }
+
+                    // eta slices A value filling
+                    // each k is a different slice of eta
+                    for(unsigned int k=0; k<etaslicenum; k++){
+                        // ptavg is the x axis in one desired type of plot
+                        double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
+                        // if the eta is within a certain slice range then add it to the eta slice hists
+                        if((jteta[probeiter]>etalow[k])&&(jteta[probeiter]<etahigh[k])){
+                            // etaslicesA are A vs pt_avg hists for different eta ranges
+                            etaslicesA[k]->Fill(ptavg,Aval);
+                        }
                     }
                 }
             }
@@ -656,21 +728,25 @@ void Apply_JEC()
             Double_t ptaavg = (etaslices_of_ptslicesA[k][l])->GetMean();
             Double_t ptaavgerr = (etaslices_of_ptslicesA[k][l])->GetMeanError();
             ptslicesAavg[k][l] = ptaavg;
+            ptslicesR[k][l] = ((1+ptaavg)/(1-ptaavg));
             ptslicesAavgerr[k][l] = ptaavgerr;
+            ptslicesRerr[k][l] = (ptaavgerr*2/((1-ptaavg)*(1-ptaavg)));
 
             // eta slices hists of <A> vs pt
             Double_t etaaavg = (ptslices_of_etaslicesA[l][k])->GetMean();
             Double_t etaaavgerr = (ptslices_of_etaslicesA[l][k])->GetMeanError();
             etaslicesAavg[l][k] = etaaavg;
+            etaslicesR[l][k] = ((1+etaaavg)/(1-etaaavg));
             etaslicesAavgerr[l][k] = etaaavgerr;
-
-
+            etaslicesRerr[l][k] = (etaaavgerr*2/((1-etaaavg)*(1-etaaavg)));
             /////////////////////////////////////////////////////////////////////////
             
             // print statements
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             cout<<"<A> for η bin "<<etalow[l]<<" to "<<etahigh[l]<<" of pt slice "<<ptlow[k]<<" to "<<pthigh[k]<<" is "<<ptslicesAavg[k][l]<<"±"<<ptslicesAavgerr[k][l]<<endl;
-            cout<<"<A> for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesAavg[k][l]<<"±"<<etaslicesAavgerr[k][l]<<endl<<endl;
+            cout<<"R for η bin "<<etalow[l]<<" to "<<etahigh[l]<<" of pt slice "<<ptlow[k]<<" to "<<pthigh[k]<<" is "<<ptslicesR[k][l]<<"±"<<ptslicesRerr[k][l]<<endl;
+            cout<<"<A> for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesAavg[k][l]<<"±"<<etaslicesAavgerr[k][l]<<endl;
+            cout<<"R for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesR[k][l]<<"±"<<etaslicesRerr[k][l]<<endl<<endl;
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         }
     }
@@ -684,18 +760,23 @@ void Apply_JEC()
         // making 1D arrays for the TGraph function inputs
         Double_t ys[etaslicenum];
         Double_t yserr[etaslicenum];
+        Double_t ys1[etaslicenum];
+        Double_t yserr1[etaslicenum];
 
         // Assigning all the values to the 1D arrays
         for(unsigned int l=0; l<etaslicenum; l++){
             ys[l] = etaslicesAavg[k][l];
             yserr[l] = etaslicesAavgerr[k][l];
+            ys1[l] = etaslicesR[k][l];
+            yserr1[l] = etaslicesRerr[k][l];
         }
 
         // making the tgraphs
         getaslicesAavg[k] = new TGraphErrors(ptslicenum,etaslicesAx,ys,etaslicesAxerr,yserr);
+        getaslicesR[k] = new TGraphErrors(ptslicenum,etaslicesAx,ys1,etaslicesAxerr,yserr1);
         cout<<endl<<"line 623"<<endl<<endl;
         // making the title for the traph
-        TString htitle3 = Form("<A>_eta_%.0f_%.0f",etalow[k]*10,etahigh[k]*10);
+        TString htitle3 = Form("eta_%.0f_%.0f",etalow[k]*10,etahigh[k]*10);
         // saving the <A> vs pT
         cout<<"line 627"<<endl<<endl;
         // gptslicesAavg[k]->SetTitle(htitle3);
@@ -705,7 +786,9 @@ void Apply_JEC()
         // gptslicesAavg[k]->Write();
         cout<<"line 633"<<endl<<endl;
         // save_g(getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
-        save_g_1(hpt, "pt", getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
+        save_g_1(hpt, "pt", "A", getaslicesAavg[k], alghere, "p_{T}  [GeV/c]", "<A>", "<A>_"+htitle3);
+        save_g_1(hpt, "pt", "R", getaslicesR[k], alghere, "p_{T}  [GeV/c]", "R", "R_"+htitle3);
+        save_g(getaslicesR[k],  "R_"+htitle3+"_g");
         cout<<"line 635"<<endl<<endl;
     }
 
@@ -714,19 +797,26 @@ void Apply_JEC()
     for(unsigned int k=0; k<etaslicenum; k++){
         Double_t ys[ptslicenum];
         Double_t yserr[ptslicenum];
+        Double_t ys1[ptslicenum];
+        Double_t yserr1[ptslicenum];
         for(unsigned int l=0; l<ptslicenum; l++){
             ys[l] = ptslicesAavg[k][l];
             yserr[l] = ptslicesAavgerr[k][l];
+            ys1[l] = ptslicesR[k][l];
+            yserr1[l] = ptslicesRerr[k][l];
         }
         gptslicesAavg[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys,ptslicesAxerr,yserr);
+        gptslicesR[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys1,ptslicesAxerr,yserr1);
         // getaslicesAavg[k]->SetMinimum(-0.1);
         // getaslicesAavg[k]->SetMaximum(0.1);
-        TString hname = Form("<A>_pt_%.0f_%.0f",ptlow[k],pthigh[k]);
+        TString hname = Form("pt_%.0f_%.0f",ptlow[k],pthigh[k]);
         // getaslicesAavg[k]->SetTitle(hname);
         // getaslicesAavg[k]->SetName(hname);
         // getaslicesAavg[k]->Write();
         // save_g(gptslicesAavg[k], alghere, "η", "<A>", hname);
-        save_g_1(heta, "eta", gptslicesAavg[k], alghere, "η", "<A>", hname);
+        save_g_1(heta, "eta", "A", gptslicesAavg[k], alghere, "η", "<A>", "<A>_"+hname);
+        save_g_1(heta, "eta", "R", gptslicesR[k], alghere, "η", "R", "R_"+hname);
+        save_g(gptslicesR[k],  "R_"+hname+"_g");
     }
     ////////////////////////////////////////////////////////////////////////////////////////////
 
