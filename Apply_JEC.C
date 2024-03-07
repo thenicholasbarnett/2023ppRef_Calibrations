@@ -21,7 +21,7 @@
 
 // PLOTTING FUNCTIONS
 
-void save_h1d(TH1D *h, TString alg, TString xtitle, TString ytitle, TString hname){
+void save_h1d_1(TH1D *h, TString alg, TString xtitle, TString ytitle, TString hname){
     // making a canvas to make whatever adjustments on
     TCanvas *c = new TCanvas();
     c->cd();
@@ -52,13 +52,14 @@ void save_h1d(TH1D *h, TString alg, TString xtitle, TString ytitle, TString hnam
     l->Draw("same");
     // saving the canvas to the file and as a png in the plots folder
     c->Write();
+    h->Write();
     c->SaveAs("plots/"+hname+".png");
     // deleting c and h_c
     delete c;
     delete h_c;
 }
 
-void save_h2d(TH2D *h, TString alg, TString xtitle, TString ytitle, TString hname){
+void save_h2d_1(TH2D *h, TString alg, TString xtitle, TString ytitle, TString hname){
     TCanvas *c = new TCanvas();
     c->cd();
     c->SetTitle("");
@@ -85,15 +86,10 @@ void save_h2d(TH2D *h, TString alg, TString xtitle, TString ytitle, TString hnam
     l->AddEntry(h_c,hname,"pl");
     l->Draw("same");
     c->Write();
+    h->Write();
     c->SaveAs("plots/"+hname+".png");
     delete c;
     delete h_c;
-}
-
-void save_g(TGraph *h, TString hname){
-    h->SetName(hname);
-    h->Write();
-    h->SaveAs("plots/"+hname+"1.png");
 }
 
 void save_g_1(TH1D *h_, TString option1,TString option2, TGraph *h, TString alg, TString xtitle, TString ytitle, TString hname){
@@ -121,13 +117,13 @@ void save_g_1(TH1D *h_, TString option1,TString option2, TGraph *h, TString alg,
             TLine *line = new TLine(80,0,500,0);
             line->Draw("same");
             line->SetLineStyle(2);
-            }
+        }
         if(option1=="eta"){
             TLine *line = new TLine(-5.2,0,5.2,0);
             line->Draw("same");
             line->SetLineStyle(2);
-            }
         }
+    }
     if(option2=="R"){
         h_->SetMaximum(1.1);
         h_->SetMinimum(0.9);
@@ -135,13 +131,14 @@ void save_g_1(TH1D *h_, TString option1,TString option2, TGraph *h, TString alg,
             TLine *line = new TLine(80,1,500,1);
             line->Draw("same");
             line->SetLineStyle(2);
-            }
+        }
         if(option1=="eta"){
             TLine *line = new TLine(-5.2,1,5.2,1);
             line->Draw("same");
             line->SetLineStyle(2);
-            }
         }
+    }
+
     // legend stuff
     TLegend *l = new TLegend(0.7,0.7,0.9,0.9);
     l->SetBorderSize(0);
@@ -153,6 +150,27 @@ void save_g_1(TH1D *h_, TString option1,TString option2, TGraph *h, TString alg,
     c->Write();
     c->SaveAs("plots/"+hname+".png");
     delete c;
+}
+
+void save_g(TGraph *h, TString hname, TFile *f){
+    h->SetName(hname);
+    // f->cd();
+    h->Write();
+    // f->Close();
+}
+
+void save_h1d(TH1D *h, TString hname, TFile *f){
+    h->SetName(hname);
+    // f->cd();
+    h->Write();
+    // f->Close();
+}
+
+void save_h2d(TH2D *h, TString hname, TFile *f){
+    h->SetName(hname);
+    // f->cd();
+    h->Write();
+    // f->Close();
 }
 
 void normalizeh(TH1D *h){
@@ -167,6 +185,8 @@ void Apply_JEC()
     Timer timer = Timer();
     timer.Start();
     gStyle->SetOptStat(0);
+
+    //cout<<"189 line"<<endl;
 
     // INITIALIZING HISTOGRAMS
     timer.StartSplit("Histogram Initialization");
@@ -187,7 +207,6 @@ void Apply_JEC()
     // ptslices
     // number of pt slices
     const Int_t ptslicenum = 7;
-    const Int_t ptslicenum_ = 6;
     // the low and high pt values for each pt slice
     double ptlow[ptslicenum] = {80,100,120,140,180,220,300};
     double pthigh[ptslicenum] = {100,120,140,180,220,300,500};
@@ -195,7 +214,6 @@ void Apply_JEC()
     // eta slices
     // number of eta slices
     const Int_t etaslicenum = 8;
-    const Int_t etaslicenum_ = 8;
     // the low and high eta values for each eta slice
     double etalow[etaslicenum] = {-5.2,-3.9,-2.6,-1.3,0,1.3,2.6,3.9};
     double etahigh[etaslicenum] = {-3.9,-2.6,-1.3,0,1.3,2.6,3.9,5.2};
@@ -221,13 +239,15 @@ void Apply_JEC()
     TGraph *gptslicesAavg[etaslicenum];
     TGraph *gptslicesR[etaslicenum];
 
+    //cout<<"240 line"<<endl;
+
     // further initializing the histograms
     // looping over pt slices
-    for(unsigned int q=0; q<ptslicenum_; q++){
+    for(unsigned int q=0; q<ptslicenum; q++){
         // A vs eta for each pt slice with title having the high and low pt for the slice
         TString chtitle0 = Form("A_ptslice_%.0f_%.0f",ptlow[q],pthigh[q]);
         ptslicesA[q] = new TH2D(chtitle0,chtitle0,etah1d0[0],etah1d0[1],etah1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
-        for(unsigned int r=0; r<etaslicenum_; r++){
+        for(unsigned int r=0; r<etaslicenum; r++){
             // avoiding looping through the etaslicenum separately by only doing it on the first q value
             if(q==0){
                 // A vs pt for each eta slice with title having the high and low eta for the slice
@@ -240,7 +260,7 @@ void Apply_JEC()
                     etaslicesA[r] = new TH2D(ahtitle0,ahtitle0,pth1d0[0],pth1d0[1],pth1d0[2],ah1d0[0],ah1d0[1],ah1d0[2]);
                 }
             }
-            // intializing hists thatre are the bins of the slices
+            // intializing hists that are the bins of the slices
             if(etalow[r]<0){
                 TString dhtitle0 = Form("A_ptslice_%.0f_%.0f__etabin_%.0f_%.0f_n",ptlow[q],pthigh[q],TMath::Abs(etalow[r]*10),TMath::Abs(etahigh[r]*10));
                 TString dhtitle1 = Form("A_etaslice_%.0f_%.0f_n__ptbin_%.0f_%.0f",TMath::Abs(etalow[r]*10),TMath::Abs(etahigh[r]*10),ptlow[q],pthigh[q]);
@@ -284,9 +304,8 @@ void Apply_JEC()
     Float_t a_=0, b_=0, c_=0;
 
     // pointing fi to the file holding the jet info of interest
-    // TFile *fi = TFile::Open("HiForestMiniAOD_10k.root","read");
-    // TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
-    TFile *fi = TFile::Open("HP_All_2_4_2024.root","read");
+    TFile *fi = TFile::Open("HP0_1_25_2024.root","read");
+    // TFile *fi = TFile::Open("forested_MC_ppRef_2-6-2023_1s.root","read");
     // TFile *fi = TFile::Open("/eos/user/n/nbarnett/PPRefHardProbes1/crab_foresting_run373710_HP1_Uncorrected_1-25-2024_0/240125_170921/0000/HP_All_2_4_2024.root","read");
 
     // declaring variables
@@ -340,10 +359,12 @@ void Apply_JEC()
 
     timer.StartSplit("Setting TTree addresses");
 
+    //cout<<"362 line"<<endl;
     // getting the TTrees from the file
 
     // toggling which clustering alg info to look
     TTree *t0 = (TTree*)fi->Get("ak4PFJetAnalyzer/t");
+    //cout<<"367 line"<<endl;
     // TTree *t0 = (TTree*)fi->Get("ak3PFJetAnalyzer/t");
     // TTree *t0 = (TTree*)fi->Get("ak2PFJetAnalyzer/t");
 
@@ -354,21 +375,26 @@ void Apply_JEC()
     t0->SetBranchAddress("jtphi",jtphi);
     t0->SetBranchAddress("rawpt",rawpt);
     t0->SetBranchAddress("nref",&nref);
+    //cout<<"378 line"<<endl;
     //////////////////////////////////////
 
     // event cut info in the following trees
     ///////////////////////////////////////////////////////////
     TTree *t1 = (TTree*)fi->Get("hiEvtAnalyzer/HiTree");
+    //cout<<"384 line"<<endl;
     t1->SetBranchAddress("vz",&vz);
 
+    //cout<<"387 line"<<endl;
     TTree *t2 = (TTree*)fi->Get("hltanalysis/HltTree");
     t2->SetBranchAddress("HLT_AK4CaloJet60_v1",&HLT_AKCJ60v1);
     t2->SetBranchAddress("HLT_AK4CaloJet80_v1",&HLT_AKCJ80v1);
 
-    TTree *t3 = (TTree*)fi->Get("skimanalysis/HltTree");
-    t3->SetBranchAddress("pprimaryVertexFilter",&ppVF);
+    // TTree *t3 = (TTree*)fi->Get("skimanalysis/HltTree");
+    // t3->SetBranchAddress("pprimaryVertexFilter",&ppVF);
     ///////////////////////////////////////////////////////////
 
+
+    //cout<<"397 line"<<endl;
     // for loop going over events in the trees
     // for(unsigned int i=0; i<t0->GetEntries(); i++){
     for(unsigned int i=0; i<100; i++){
@@ -382,7 +408,7 @@ void Apply_JEC()
         // getting the entries in every event
         ////////////////
         t2->GetEntry(i);
-        t3->GetEntry(i);
+        // t3->GetEntry(i);
         ////////////////
 
         // adding one to total events for every event
@@ -390,7 +416,8 @@ void Apply_JEC()
 
         // EVENT CUT
         // only events with |vz|<15 and all the triggers of interest are passed
-        if((ppVF==1)&&(HLT_AKCJ60v1==1)){
+        // if((ppVF==1)&&(HLT_AKCJ60v1==1)){
+        if(HLT_AKCJ60v1==1){
             t1->GetEntry(i);
             if(TMath::Abs(vz)<15){
                 t0->GetEntry(i);
@@ -458,12 +485,12 @@ void Apply_JEC()
                     // int t0 = a_;
                     // int t1 = j;
                     // if((t0%250==0)&&(t1%10 == 0)){
-                        // cout << "for event " << a_ << endl<< endl;
-                        // cout << "jtpt is " << jtpt[j] << endl;
-                        // cout << "jteta is " << jteta[j] << endl;
-                        // cout << "jtphi is " << jtphi[j] << endl;
-                        // cout << "jtcorrpt is " << jtcorrpt[j] << endl;
-                        // cout << "rawpt is " << rawpt[j] << endl;
+                        // //cout << "for event " << a_ << endl<< endl;
+                        // //cout << "jtpt is " << jtpt[j] << endl;
+                        // //cout << "jteta is " << jteta[j] << endl;
+                        // //cout << "jtphi is " << jtphi[j] << endl;
+                        // //cout << "jtcorrpt is " << jtcorrpt[j] << endl;
+                        // //cout << "rawpt is " << rawpt[j] << endl;
                     // }
                     //////////////////////////////////////////////////////
                 }
@@ -528,12 +555,12 @@ void Apply_JEC()
                     if((checkval1%2==0)&&(nref<3)){
                         tagiter = leaditer;
                         probeiter = subleaditer;
-                        cout<<"the random number is "<< checkval1<<" and even, leading jet is tagged"<<endl;
+                        //cout<<"the random number is "<< checkval1<<" and even, leading jet is tagged"<<endl;
                     }
                     if((checkval1%2!=0)&&(nref<3)){
                         tagiter = subleaditer;
                         probeiter = leaditer;
-                        cout<<"the random number is "<< checkval1<<" and odd, subleading jet is tagged"<<endl;
+                        //cout<<"the random number is "<< checkval1<<" and odd, subleading jet is tagged"<<endl;
                     }
                 }
 
@@ -571,12 +598,12 @@ void Apply_JEC()
                             if(checkval%2==0){
                                 tagiter = leaditer;
                                 probeiter = subleaditer;
-                                cout<<"the random number is "<< checkval<<" and even, leading jet is tagged"<<endl;
+                                // cout<<"the random number is "<< checkval<<" and even, leading jet is tagged"<<endl;
                             }
                             if(checkval%2!=0){
                                 tagiter = subleaditer;
                                 probeiter = leaditer;
-                                cout<<"the random number is "<< checkval<<" and odd, subleading jet is tagged"<<endl;
+                                // cout<<"the random number is "<< checkval<<" and odd, subleading jet is tagged"<<endl;
                             }
                         }
                         // printing A value and saving it
@@ -585,7 +612,7 @@ void Apply_JEC()
 
                         // pt slices A value filling
                         // each k is a different slice of pt
-                        for(unsigned int k=0; k<ptslicenum_; k++){
+                        for(unsigned int k=0; k<ptslicenum; k++){
                             // average momentum between the probe and tag jet 
                             // these are sliced originally to get A vs eta for different pt slices
                             double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
@@ -598,7 +625,7 @@ void Apply_JEC()
 
                         // eta slices A value filling
                         // each k is a different slice of eta
-                        for(unsigned int k=0; k<etaslicenum_; k++){
+                        for(unsigned int k=0; k<etaslicenum; k++){
                             // ptavg is the x axis in one desired type of plot
                             double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
                             // if the eta is within a certain slice range then add it to the eta slice hists
@@ -619,7 +646,7 @@ void Apply_JEC()
 
                     // pt slices A value filling
                     // each k is a different slice of pt
-                    for(unsigned int k=0; k<ptslicenum_; k++){
+                    for(unsigned int k=0; k<ptslicenum; k++){
                         // average momentum between the probe and tag jet 
                         // these are sliced originally to get A vs eta for different pt slices
                         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
@@ -632,7 +659,7 @@ void Apply_JEC()
 
                     // eta slices A value filling
                     // each k is a different slice of eta
-                    for(unsigned int k=0; k<etaslicenum_; k++){
+                    for(unsigned int k=0; k<etaslicenum; k++){
                         // ptavg is the x axis in one desired type of plot
                         double ptavg = (jtcorrpt[probeiter]+jtcorrpt[tagiter])/2;
                         // if the eta is within a certain slice range then add it to the eta slice hists
@@ -651,7 +678,7 @@ void Apply_JEC()
 
     // closing the file I'm getting the information from
     fi->Close();
-    cout <<endl<< "the number of jets in the barrel with pT above 80 GeV was " << pt80barreljetnum << endl<<endl;
+    //cout <<endl<< "the number of jets in the barrel with pT above 80 GeV was " << pt80barreljetnum << endl<<endl;
 
     // normalizing some hists with the integral function
     ///////////////////////
@@ -663,34 +690,34 @@ void Apply_JEC()
     normalizeh(hjtphi); 
     ///////////////////////
 
-    cout<<"line 514"<<endl<<endl;
+    //cout<<"line 514"<<endl<<endl;
 
     // making a new file to store all the histograms of interest in
     // TFile f("pt_balance.root","recreate");
-    TFile *f = new TFile("pt_balance.root", "recreate");
-    f->cd();
+    TFile *f1 = new TFile("pt_balance.root", "recreate");
+    f1->cd();
 
     // writing the base variable hists to this new file
-    cout<<"line 521"<<endl<<endl;
+    //cout<<"line 521"<<endl<<endl;
     ///////////////////
     TString alghere = "ak4pf";
-    cout<<"line 524"<<endl<<endl;
-    save_h1d(hvz, alghere, "vz", "Probability", "hvz");
-    cout<<"line 526"<<endl<<endl;
-    save_h1d(hjtcorrpt, alghere, "p_{T}^{corrected jet}", "Probability", "hjtcorrpt");
-    save_h1d(hjteta, alghere, "η", "Probability", "hjeta");
-    save_h1d(hjtphi, alghere, "φ", "Probability", "hjtphi");
-    save_h1d(hrawpt, alghere, "p_{T}", "Probability", "hrawpt");
+    //cout<<"line 524"<<endl<<endl;
+    save_h1d(hvz, "hvz", f1);
+    //cout<<"line 526"<<endl<<endl;
+    save_h1d(hjtcorrpt, "hjtcorrpt", f1);
+    save_h1d(hjteta, "hjeta", f1);
+    save_h1d(hjtphi, "hjtphi", f1);
+    save_h1d(hrawpt, "hrawpt", f1);
     
     ///////////////////
 
     // looping throught the pt slices
-    for(unsigned int k=0; k<ptslicenum_; k++){
+    for(unsigned int k=0; k<ptslicenum; k++){
 
         // saving the A vs eta plots for each pt slice
         TString bhtitle0 = Form("ptslicesA_ptbin%d_%.0f_%.0f",k,ptlow[k],pthigh[k]);
-        save_h2d(ptslicesA[k], alghere, "η", "A", bhtitle0);
-        cout<<"line 537"<<endl<<endl;
+        save_h2d(ptslicesA[k], bhtitle0, f1);
+        //cout<<"line 537"<<endl<<endl;
 
         // making the x axis points for the eta slices be the center of each pt bin
         etaslicesAx[k] = (pthigh[k] + ptlow[k])/2;
@@ -698,7 +725,7 @@ void Apply_JEC()
         etaslicesAxerr[k] = etaslicesAx[k] - ptlow[k];
 
         // looping through the eta slices
-        for(unsigned int l=0; l<etaslicenum_; l++){
+        for(unsigned int l=0; l<etaslicenum; l++){
 
             // conditional below acts like an separated l loop 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -706,11 +733,11 @@ void Apply_JEC()
                 // saving eta slice hists of A vs pt
                 if(etalow[l]<0){
                     TString bhtitle1 = Form("etaslicesA_etabin_%.0f_%.0f_n",TMath::Abs(etalow[l]*10),TMath::Abs(etahigh[l]*10));
-                    save_h2d(etaslicesA[l], alghere, "p_{T}^{avg}", "A", bhtitle1);
+                    save_h2d(etaslicesA[l], bhtitle1, f1);
                 }
                 if(etalow[l]>0||etalow[l]==0){
                     TString bhtitle1 = Form("etaslicesA_etabin_%.0f_%.0f",etalow[l]*10,etahigh[l]*10);
-                    save_h2d(etaslicesA[l], alghere, "p_{T}^{avg}", "A", bhtitle1);
+                    save_h2d(etaslicesA[l], bhtitle1, f1);
                 }
                 // pt axis for tgraphs
                 ptslicesAx[l] = (etahigh[l] + etalow[l])/2;
@@ -732,19 +759,19 @@ void Apply_JEC()
             // saving the projection hists
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // eta bins of pt slices
-            cout << "reached line 735" <<endl;
+            //cout << "reached line 735" <<endl;
             if(etalow[l]<0){
                 TString htitle1 = Form("Aptslice_%.0f_%.0f_etabin_%.0f_%.0f_n",ptlow[k],pthigh[k],TMath::Abs(etalow[l]*10),TMath::Abs(etahigh[l]*10));
-                TString htitle2 = Form("Aetaslice_%.0f_%.0f_ptbin_%.0f_%.0f",TMath::Abs(etalow[l]*10),TMath::Abs(etahigh[l]*10),ptlow[k],pthigh[k]);
-                save_h1d(etaslices_of_ptslicesA[k][l], alghere, "A", "probability", htitle1);
-                save_h1d(ptslices_of_etaslicesA[l][k], alghere, "A", "Probability", htitle2);
+                TString htitle2 = Form("Aetaslice_%.0f_%.0f_n_ptbin_%.0f_%.0f",TMath::Abs(etalow[l]*10),TMath::Abs(etahigh[l]*10),ptlow[k],pthigh[k]);
+                save_h1d(etaslices_of_ptslicesA[k][l], htitle1, f1);
+                save_h1d(ptslices_of_etaslicesA[l][k], htitle2, f1);
             }
-            cout << "reached line 742" <<endl;
+            //cout << "reached line 742" <<endl;
             if(etalow[l]>0||etalow[l]==0){
                 TString htitle1 = Form("Aptslice_%.0f_%.0f_etabin_%.0f_%.0f",ptlow[k],pthigh[k],etalow[l]*10,etahigh[l]*10);
                 TString htitle2 = Form("Aetaslice_%.0f_%.0f_ptbin_%.0f_%.0f",etalow[l]*10,etahigh[l]*10,ptlow[k],pthigh[k]);
-                save_h1d(etaslices_of_ptslicesA[k][l], alghere, "A", "probability", htitle1);
-                save_h1d(ptslices_of_etaslicesA[l][k], alghere, "A", "Probability", htitle2);
+                save_h1d(etaslices_of_ptslicesA[k][l], htitle1, f1);
+                save_h1d(ptslices_of_etaslicesA[l][k], htitle2, f1);
             }
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -769,21 +796,21 @@ void Apply_JEC()
             
             // print statements
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            cout<<"<A> for η bin "<<etalow[l]<<" to "<<etahigh[l]<<" of pt slice "<<ptlow[k]<<" to "<<pthigh[k]<<" is "<<ptslicesAavg[k][l]<<"±"<<ptslicesAavgerr[k][l]<<endl;
+            //cout<<"<A> for η bin "<<etalow[l]<<" to "<<etahigh[l]<<" of pt slice "<<ptlow[k]<<" to "<<pthigh[k]<<" is "<<ptslicesAavg[k][l]<<"±"<<ptslicesAavgerr[k][l]<<endl;
             cout<<"R for η bin "<<etalow[l]<<" to "<<etahigh[l]<<" of pt slice "<<ptlow[k]<<" to "<<pthigh[k]<<" is "<<ptslicesR[k][l]<<"±"<<ptslicesRerr[k][l]<<endl;
-            cout<<"<A> for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesAavg[k][l]<<"±"<<etaslicesAavgerr[k][l]<<endl;
+            //cout<<"<A> for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesAavg[k][l]<<"±"<<etaslicesAavgerr[k][l]<<endl;
             cout<<"R for pt bin "<<ptlow[l]<<" to "<<pthigh[l]<<" of η slice "<<etalow[k]<<" to "<<etahigh[k]<<" is "<<etaslicesR[k][l]<<"±"<<etaslicesRerr[k][l]<<endl<<endl;
             /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-            cout << " l is " << l << ", k is " << k<<endl<<endl;
+            //cout << " l is " << l << ", k is " << k<<endl<<endl;
         }
     }
-    cout << "reached line 779" <<endl;
+    //cout << "reached line 779" <<endl;
 
     // actually finding the averages of the A values for the tgraphs
     ////////////////////////////////////////////////////////////////////////////////////////////
     
     // <A> vs pt for each eta slice
-    for(unsigned int k=0; k<ptslicenum_; k++){
+    for(unsigned int k=0; k<etaslicenum; k++){
 
         // making 1D arrays for the TGraph function inputs
         Double_t ys[etaslicenum];
@@ -792,7 +819,7 @@ void Apply_JEC()
         Double_t yserr1[etaslicenum];
 
         // Assigning all the values to the 1D arrays
-        for(unsigned int l=0; l<etaslicenum_; l++){
+        for(unsigned int l=0; l<etaslicenum; l++){
             ys[l] = etaslicesAavg[k][l];
             yserr[l] = etaslicesAavgerr[k][l];
             ys1[l] = etaslicesR[k][l];
@@ -805,27 +832,27 @@ void Apply_JEC()
         // making the title for the traph
         if(etalow[k]<0){
             TString htitle3 = Form("eta_%.0f_%.0f_n",TMath::Abs(etalow[k]*10),TMath::Abs(etahigh[k]*10));
-            save_g_1(hpt, "pt", "A", getaslicesAavg[k], alghere, "p_{T}  [GeV/c]", "<A>", "<A>_"+htitle3);
-            save_g_1(hpt, "pt", "R", getaslicesR[k], alghere, "p_{T}  [GeV/c]", "R", "R_"+htitle3);
-            save_g(getaslicesR[k],  "R_"+htitle3+"_g");
+            // save_g_1(hpt, "pt", "A", getaslicesAavg[k], alghere, "p_{T}  [GeV/c]", "<A>", "<A>_"+htitle3);
+            // save_g_1(hpt, "pt", "R", getaslicesR[k], alghere, "p_{T}  [GeV/c]", "R", "R_"+htitle3);
+            save_g(getaslicesR[k],  "R_"+htitle3, f1);
         }
         if(etalow[k]>0||etalow[k]==0){
             TString htitle3 = Form("eta_%.0f_%.0f",etalow[k]*10,etahigh[k]*10);
             // save_g(getaslicesAavg[k], alghere, "p_T [GeV/c]", "<A>", htitle3);
-            save_g_1(hpt, "pt", "A", getaslicesAavg[k], alghere, "p_{T}  [GeV/c]", "<A>", "<A>_"+htitle3);
-            save_g_1(hpt, "pt", "R", getaslicesR[k], alghere, "p_{T}  [GeV/c]", "R", "R_"+htitle3);
-            save_g(getaslicesR[k],  "R_"+htitle3+"_g");
+            // save_g_1(hpt, "pt", "A", getaslicesAavg[k], alghere, "p_{T}  [GeV/c]", "<A>", "<A>_"+htitle3);
+            // save_g_1(hpt, "pt", "R", getaslicesR[k], alghere, "p_{T}  [GeV/c]", "R", "R_"+htitle3);
+            save_g(getaslicesR[k],  "R_"+htitle3, f1);
         }
     }
 
     // <A> vs eta for each pt slice
     // same as previous loop but for switched eta and pt
-    for(unsigned int k=0; k<etaslicenum_; k++){
+    for(unsigned int k=0; k<ptslicenum; k++){
         Double_t ys[ptslicenum];
         Double_t yserr[ptslicenum];
         Double_t ys1[ptslicenum];
         Double_t yserr1[ptslicenum];
-        for(unsigned int l=0; l<ptslicenum_; l++){
+        for(unsigned int l=0; l<ptslicenum; l++){
             ys[l] = ptslicesAavg[k][l];
             yserr[l] = ptslicesAavgerr[k][l];
             ys1[l] = ptslicesR[k][l];
@@ -835,32 +862,29 @@ void Apply_JEC()
         gptslicesR[k] = new TGraphErrors(etaslicenum,ptslicesAx,ys1,ptslicesAxerr,yserr1);
         // getaslicesAavg[k]->SetMinimum(-0.1);
         // getaslicesAavg[k]->SetMaximum(0.1);
-        TString hname = Form("pt_%.0f_%.0f",ptlow[k],pthigh[k]);
+        TString hnamea = Form("pt_%.0f_%.0f",ptlow[k],pthigh[k]);
         // getaslicesAavg[k]->SetTitle(hname);
         // getaslicesAavg[k]->SetName(hname);
         // getaslicesAavg[k]->Write();
         // save_g(gptslicesAavg[k], alghere, "η", "<A>", hname);
-        save_g_1(heta, "eta", "A", gptslicesAavg[k], alghere, "η", "<A>", "<A>_"+hname);
-        save_g_1(heta, "eta", "R", gptslicesR[k], alghere, "η", "R", "R_"+hname);
-        save_g(gptslicesR[k],  "R_"+hname+"_g");
+        // save_g_1(heta, "eta", "A", gptslicesAavg[k], alghere, "η", "<A>", "<A>_"+hname);
+        // save_g_1(heta, "eta", "R", gptslicesR[k], alghere, "η", "R", "R_"+hname);
+        save_g(gptslicesR[k],  "R_"+hnamea, f1);
     }
     ////////////////////////////////////////////////////////////////////////////////////////////
-
-    // closing the root file storing all of the histograms
-    f->Close();
-
+    f1->Close();
     // FINAL PRINT STATEMENTS
 
     // expressing passed/total as a percent
     // float p0 = b_/a_*100;
 
     // printing out the event cut amount
-    // cout<<"number of total events: "<< a_ << endl;
-    // cout<<"number of passed events before event cut: "<< b_ << endl;
-    // cout<<"percent of passed events before eta cut: "<< p0 <<"%"<< endl;
+    // //cout<<"number of total events: "<< a_ << endl;
+    // //cout<<"number of passed events before event cut: "<< b_ << endl;
+    // //cout<<"percent of passed events before eta cut: "<< p0 <<"%"<< endl;
     //
     // determining the final time of the script
     timer.Stop();
-    cout<<endl;
+    //cout<<endl;
     timer.Report();
 }
