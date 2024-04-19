@@ -40,7 +40,7 @@ void normalizeh(TH1D *h){
 }
 
 // the script all runs in this function
-void pt_balance_generator_Rval_2023ppRef_MC_Condor(TString input, TString output)
+void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output)
 {   
     // getting rid of legends in hists in root file
     gStyle->SetOptStat(0);
@@ -213,8 +213,8 @@ void pt_balance_generator_Rval_2023ppRef_MC_Condor(TString input, TString output
     t1->SetBranchAddress("vz",&vz);
 
     // for loop going over events in the trees
-    // for(unsigned int i=0; i<t0->GetEntries(); i++){
-    for(unsigned int i=0; i<100; i++){
+    for(unsigned int i=0; i<t0->GetEntries(); i++){
+    //for(unsigned int i=0; i<100; i++){
 
         // cout<< "event " << i << " is being processed" << endl;
 
@@ -301,18 +301,18 @@ void pt_balance_generator_Rval_2023ppRef_MC_Condor(TString input, TString output
             // defining tag and probe iters based on leading and subleading jet iters
             // tag and probe must be either leading or subleading jet
             // if the leading jet is in the barrel, tag it
-            if(TMath::Abs(jteta[leaditer]<1.3)){
+            if(TMath::Abs(jteta[leaditer])<1.3){
                 tagiter = leaditer;
                 probeiter = subleaditer;
             }
             // if the subleading jet is in the barrel, tag it
-            if(TMath::Abs(jteta[subleaditer]<1.3)){
+            if(TMath::Abs(jteta[subleaditer])<1.3){
                 tagiter = subleaditer;
                 probeiter = leaditer;
             }
             // in the case both jets are in the barrel we make a random number 
             // if the random number is even or odd the tag jet is the leading or subleading jet respectively
-            if((TMath::Abs(jteta[leaditer]<1.3))&&(TMath::Abs(jteta[subleaditer]<1.3))){
+            if((TMath::Abs(jteta[leaditer])<1.3)&&(TMath::Abs(jteta[subleaditer])<1.3)){
                 int checkval1 = rand->Integer(100);
                 if((checkval1%2==0)&&(nref<3)){
                     tagiter = leaditer;
@@ -346,15 +346,15 @@ void pt_balance_generator_Rval_2023ppRef_MC_Condor(TString input, TString output
                 // still working if there is a third jet
                 // doing the whole pt balance study in the case there is a third jet
                 if(((jtcorrpt[subleaditer]+jtcorrpt[leaditer])*0.1>jtcorrpt[thirditer])&&(TMath::Abs(jtphi[leaditer]-jtphi[subleaditer])>2.7)){
-                    if(TMath::Abs(jteta[leaditer]<1.3)){
+                    if(TMath::Abs(jteta[leaditer])<1.3){
                         tagiter = leaditer;
                         probeiter = subleaditer;
                     }
-                    if(TMath::Abs(jteta[subleaditer]<1.3)){
+                    if(TMath::Abs(jteta[subleaditer])<1.3){
                         tagiter = subleaditer;
                         probeiter = leaditer;
                     }
-                    if((TMath::Abs(jteta[leaditer]<1.3))&&(TMath::Abs(jteta[subleaditer]<1.3))){
+                    if((TMath::Abs(jteta[leaditer])<1.3)&&(TMath::Abs(jteta[subleaditer])<1.3)){
                         int checkval = rand->Integer(100);
                         if(checkval%2==0){
                             tagiter = leaditer;
@@ -396,7 +396,7 @@ void pt_balance_generator_Rval_2023ppRef_MC_Condor(TString input, TString output
                 }              
             }
             // finding the A values iff the leading jet has eta < 1.3 and subleading jet passes the pt cut and has eta < 5.2 
-            if(((TMath::Abs(jteta[leaditer]<1.3))||(TMath::Abs(jteta[subleaditer]<1.3)))&&(jtcorrpt[subleaditer]>ptcut)&&(nref<3)&&(TMath::Abs(jtphi[leaditer]-jtphi[subleaditer])>2.7)){
+            if(((TMath::Abs(jteta[leaditer])<1.3)||(TMath::Abs(jteta[subleaditer])<1.3))&&(jtcorrpt[subleaditer]>ptcut)&&(nref<3)&&(TMath::Abs(jtphi[leaditer]-jtphi[subleaditer])>2.7)){
                 // printing A value and saving it
                 double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
                 cout << "A is " << Aval << " for event " << i << endl;
