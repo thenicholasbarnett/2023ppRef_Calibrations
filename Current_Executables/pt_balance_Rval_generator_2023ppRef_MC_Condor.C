@@ -139,6 +139,14 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     TH1D *hpt = new TH1D("hpt","hpt",pth1d0[0],pth1d0[1],pth1d0[2]);
     TH1D *heta = new TH1D("heta","heta",etah1d0[0],etah1d0[1],etah1d0[2]);
 
+    // pt balance probe and tag momenta hists
+    TH1D *htagjtpt = new TH1D("htagjtpt","htagjtpt",pth1d0[0],pth1d0[1],pth1d0[2]);
+    TH1D *hprobejtpt = new TH1D("hprobejtpt","hprobejtpt",pth1d0[0],pth1d0[1],pth1d0[2]);
+    TH1D *htagjteta = new TH1D("htagjteta","htagjteta",etah1d0[0],etah1d0[1],etah1d0[2]);
+    TH1D *hprobejteta = new TH1D("hprobejteta","hprobejteta",etah1d0[0],etah1d0[1],etah1d0[2]);
+    TH1D *htagjtphi = new TH1D("hjttagphi","hjttagphi",phih1d0[0],phih1d0[1],phih1d0[2]);
+    TH1D *hprobejtphi = new TH1D("hjtprobephi","hjtprobephi",phih1d0[0],phih1d0[1],phih1d0[2]);
+
     // INITIALIZING PARAMETERS
 
     // a_ and b_ are the number of total events and accepted events respectively
@@ -147,6 +155,7 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     // declaring variables
     // vertex position
     Float_t vz;
+    Float_t w;
     // whatever ptcutm is decided
     Float_t ptcut = 1;
     // a big number to make my arrays such that they aren't too small
@@ -204,6 +213,7 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     // doing the same for the other tree I want
     t1->SetBranchStatus("*",0);
     t1->SetBranchStatus("vz",1);
+    t1->SetBranchStatus("weight",1);
 
     // general parameters
     t0->SetBranchAddress("jteta",jteta);
@@ -211,10 +221,11 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     t0->SetBranchAddress("rawpt",rawpt);
     t0->SetBranchAddress("nref",&nref);
     t1->SetBranchAddress("vz",&vz);
+    t1->SetBranchAddress("weigt",&w);
 
     // for loop going over events in the trees
-    for(unsigned int i=0; i<t0->GetEntries(); i++){
-    //for(unsigned int i=0; i<100; i++){
+    // for(unsigned int i=0; i<t0->GetEntries(); i++){
+    // for(unsigned int i=0; i<100; i++){
 
         // cout<< "event " << i << " is being processed" << endl;
 
@@ -231,13 +242,13 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
             b_+=1;
 
             // filling the vertex position hist
-            hvz->Fill(vz);
+            hvz->Fill(vz, w);
             if(nref<2){continue;}
             // looping through all jets in each event
             for(unsigned int j=0; j<nref; j++){
                 
                 if((rawpt[j]>pth1d0[1])&&(rawpt[j]<pth1d0[2])){
-                    hrawpt->Fill(rawpt[j]);
+                    hrawpt->Fill(rawpt[j], w);
                 }
 
                 // getting the corrected jet pt
@@ -254,14 +265,14 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
 
                 // Filling some hists
                 if((jtcorrpt[j]>pth1d0[1])&&(jtcorrpt[j]<pth1d0[2])){
-                    hjtcorrpt->Fill(jtcorrpt[j]);
+                    hjtcorrpt->Fill(jtcorrpt[j], w);
                 }
 
                 // only look at pt balance studies if jtcorrpt > ptcut
                 if(jtcorrpt[j]>ptcut){
                     // filling histograms that have variables with more than one value per event
-                    hjteta->Fill(jteta[j]);
-                    hjtphi->Fill(jtphi[j]);
+                    hjteta->Fill(jteta[j], w);
+                    hjtphi->Fill(jtphi[j], w);
                 }
             }
             
@@ -367,9 +378,17 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
                             // cout<<"the random number is "<< checkval<<" and odd, subleading jet is tagged"<<endl;
                         }
                     }
+                    // saving probe and tag eta
+                    htagjtpt->Fill(jtcorrpt[tagiter], w);
+                    hprobejtpt->Fill(jtcorrpt[probeiter], w);
+                    htagjteta->Fill(jteta[tagiter], w);
+                    hprobejteta->Fill(jteta[probeiter], w);
+                    htagjtphi->Fill(jtphi[tagiter], w);
+                    hprobejtphi->Fill(jtphi[probeiter], w);
+
                     // printing A value and saving it
                     double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
-                    cout << "A is " << Aval << " for event " << i << endl;
+                    // cout << "A is " << Aval << " for event " << i << endl;
                     // pt slices A value filling
                     // each k is a different slice of pt
                     for(unsigned int p=0; p<ptslicenum; p++){
@@ -379,7 +398,7 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
                         // if the pt avg is within a certain slice range then add it to the pt slice hists
                         if((ptavg>ptlow[p])&&(ptavg<pthigh[p])){
                             // ptslicesA are A vs eta_probe hists for different pt ranges or slices
-                            ptslicesA[p]->Fill(jteta[probeiter],Aval);
+                            ptslicesA[p]->Fill(jteta[probeiter],Aval, w);
                         }
                     }
                     // eta slices A value filling
@@ -390,13 +409,21 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
                         // if the eta is within a certain slice range then add it to the eta slice hists
                         if((jteta[probeiter]>etalow[q])&&(jteta[probeiter]<etahigh[q])){
                             // etaslicesA are A vs pt_avg hists for different eta ranges
-                            etaslicesA[q]->Fill(ptavg,Aval);
+                            etaslicesA[q]->Fill(ptavg,Aval, w);
                         }
                     }
                 }              
             }
             // finding the A values iff the leading jet has eta < 1.3 and subleading jet passes the pt cut and has eta < 5.2 
             if(((TMath::Abs(jteta[leaditer])<1.3)||(TMath::Abs(jteta[subleaditer])<1.3))&&(jtcorrpt[subleaditer]>ptcut)&&(nref<3)&&(TMath::Abs(jtphi[leaditer]-jtphi[subleaditer])>2.7)){
+                // saving probe and tag eta
+                htagjtpt->Fill(jtcorrpt[tagiter], w);
+                hprobejtpt->Fill(jtcorrpt[probeiter], w);
+                htagjteta->Fill(jteta[tagiter], w);
+                hprobejteta->Fill(jteta[probeiter], w);
+                htagjtphi->Fill(jtphi[tagiter], w);
+                hprobejtphi->Fill(jtphi[probeiter], w);
+                
                 // printing A value and saving it
                 double Aval = (jtcorrpt[probeiter]-jtcorrpt[tagiter])/(jtcorrpt[probeiter]+jtcorrpt[tagiter]);
                 cout << "A is " << Aval << " for event " << i << endl;
@@ -409,7 +436,7 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
                     // if the pt avg is within a certain slice range then add it to the pt slice hists
                     if((ptavg>ptlow[p])&&(ptavg<pthigh[p])){
                         // ptslicesA are A vs eta_probe hists for different pt ranges or slices
-                        ptslicesA[p]->Fill(jteta[probeiter],Aval);
+                        ptslicesA[p]->Fill(jteta[probeiter],Aval, w);
                     }
                 }
                 // eta slices A value filling
@@ -420,7 +447,7 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
                     // if the eta is within a certain slice range then add it to the eta slice hists
                     if((jteta[probeiter]>etalow[q])&&(jteta[probeiter]<etahigh[q])){
                         // etaslicesA are A vs pt_avg hists for different eta ranges
-                        etaslicesA[q]->Fill(ptavg,Aval);
+                        etaslicesA[q]->Fill(ptavg,Aval, w);
                     }
                 }
             }
@@ -436,6 +463,14 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     normalizeh(hjteta);
     normalizeh(hjtphi); 
 
+    // normalizing probe and tag momenta
+    normalizeh(htagjtpt);
+    normalizeh(hprobejtpt);
+    normalizeh(htagjteta);
+    normalizeh(hprobejteta);
+    normalizeh(htagjtphi);
+    normalizeh(hprobejtphi);
+
     // making a new file to store all the histograms of interest in
     TFile *f1 = new TFile(output,"recreate");
     f1->cd();
@@ -446,6 +481,14 @@ void pt_balance_Rval_generator_2023ppRef_MC_Condor(TString input, TString output
     save_h1d(hjteta, "hjeta");
     save_h1d(hjtphi, "hjtphi");
     save_h1d(hrawpt, "hrawpt");
+
+    // writing probe and tag momenta
+    save_h1d(htagjtpt, "htagjtpt");
+    save_h1d(hprobejtpt, "hprobejtpt");
+    save_h1d(htagjteta, "htagjteta");
+    save_h1d(hprobejteta, "hprobejteta");
+    save_h1d(htagjtphi, "htagjtphi");
+    save_h1d(hprobejtphi, "hprobejtphi");
     
     // looping throught the pt slices
     for(unsigned int p=0; p<ptslicenum; p++){
